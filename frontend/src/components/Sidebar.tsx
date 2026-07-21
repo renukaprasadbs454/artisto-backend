@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { useAuthStore } from "../store/auth";
-import { Home, MessageSquare, Compass, Wallet, LayoutDashboard, ShieldAlert, Lock } from "lucide-react";
+import { Home, MessageSquare, Wallet, LayoutDashboard, ShieldAlert, Lock } from "lucide-react";
 import { motion } from "framer-motion";
 import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";

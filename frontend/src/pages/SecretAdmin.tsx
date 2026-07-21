@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../services/api";
 import { useAuthStore } from "../store/auth";
-import { ShieldAlert, KeyRound, CheckCircle2, Lock } from "lucide-react";
+import { KeyRound, Lock } from "lucide-react";
 
 export default function SecretAdmin() {
   const navigate = useNavigate();
@@ -28,7 +28,7 @@ export default function SecretAdmin() {
 
     try {
       setLoading(true);
-      const updatedUser = await api.updateRole("ADMIN");
+      await api.updateRole("ADMIN");
       if (user) {
         setUser({ ...user, role: "ADMIN" } as any);
       }

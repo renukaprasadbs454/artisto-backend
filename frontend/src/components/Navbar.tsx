@@ -31,8 +31,9 @@ function Navbar() {
         const notifs: NotificationItem[] = [];
 
         // Fetch recent conversations for message notifications
-        const convos = await api.getConversations();
-        convos.slice(0, 5).forEach((c: any) => {
+        const convosRes = await api.getConversations();
+        const convosList = Array.isArray(convosRes) ? convosRes : (convosRes as any)?.data || [];
+        convosList.slice(0, 5).forEach((c: any) => {
           if (c.lastMessage) {
             const isMe = c.lastMessage.senderId === user.id;
             if (!isMe) {
@@ -52,8 +53,9 @@ function Navbar() {
         });
 
         // Fetch recent orders for application notifications
-        const orders = await api.getOrders();
-        orders.slice(0, 5).forEach((o: any) => {
+        const ordersRes = await api.getOrders();
+        const ordersList = Array.isArray(ordersRes) ? ordersRes : (ordersRes as any)?.data || [];
+        ordersList.slice(0, 5).forEach((o: any) => {
           notifs.push({
             id: `ord-${o.id}`,
             title: `Application: ${o.listing?.title || 'Casting Call'}`,
