@@ -1,0 +1,274 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  BUYER
+  SELLER
+  ADMIN
+}
+
+enum ListingStatus {
+  ACTIVE
+  PAUSED
+  ARCHIVED
+}
+
+enum OrderStatus {
+  PENDING
+  ACCEPTED
+  IN_PROGRESS
+  DELIVERED
+  COMPLETED
+  CANCELLED
+}
+
+enum MediaOwnerType {
+  AVATAR
+  PORTFOLIO
+  LISTING
+  MESSAGE
+}
+
+model User {
+  id               String   @id @default(uuid())
+  username         String   @unique
+  email            String   @unique
+  passwordHash     String
+  role             Role     @default(BUYER)
+  refreshTokenHash String?
+  emailVerified    Boolean  @default(false)
+  suspended        Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  profile        Profile?
+  portfolioItems PortfolioItem[]
+  listings       Listing[]       @relation("SellerListings")
+  buyerOrders    Order[]         @relation("BuyerOrders")
+  sellerOrders   Order[]         @relation("SellerOrders")
+  sentMessages   Message[]       @relation("MessageSender")
+  conversationsA Conversation[]  @relation("ParticipantOne")
+  conversationsB Conversation[]  @relation("ParticipantTwo")
+  workExperiences WorkExperience[]
+  actorProfile    ActorProfile?
+  posts           Post[]         @relation("PostAuthor")
+  postLikes       PostLike[]
+  postComments    PostComment[]
+  subscriptions   Subscription[]
+  payments        Payment[]
+}
+
+model Profile {
+  id          String   @id @default(uuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  displayName String
+  avatarUrl   String?
+  bannerUrl   String?
+  bio         String?
+  headline    String?
+  location    String?
+  skills      String[] @default([])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model PortfolioItem {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  projectUrl  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Listing {
+  id            String        @id @default(uuid())
+  sellerId      String
+  seller        User          @relation("SellerListings", fields: [sellerId], references: [id], onDelete: Cascade)
+  title         String
+  description   String
+  category      String
+  price         Decimal       @db.Decimal(10, 2)
+  deliveryDays  Int
+  coverImageUrl String?
+  status        ListingStatus @default(ACTIVE)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  orders Order[]
+}
+
+model Order {
+  id           String      @id @default(uuid())
+  listingId    String
+  listing      Listing     @relation(fields: [listingId], references: [id])
+  buyerId      String
+  buyer        User        @relation("BuyerOrders", fields: [buyerId], references: [id])
+  sellerId     String
+  seller       User        @relation("SellerOrders", fields: [sellerId], references: [id])
+  status       OrderStatus @default(PENDING)
+  requirements String?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  conversation Conversation?
+}
+
+model Conversation {
+  id               String   @id @default(uuid())
+  participantOneId String
+  participantOne   User     @relation("ParticipantOne", fields: [participantOneId], references: [id])
+  participantTwoId String
+  participantTwo   User     @relation("ParticipantTwo", fields: [participantTwoId], references: [id])
+  orderId          String?  @unique
+  order            Order?   @relation(fields: [orderId], references: [id])
+  createdAt        DateTime @default(now())
+
+  messages Message[]
+}
+
+model Message {
+  id             String       @id @default(uuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderId       String
+  sender         User         @relation("MessageSender", fields: [senderId], references: [id])
+  content        String
+  readAt         DateTime?
+  createdAt      DateTime     @default(now())
+}
+
+model Media {
+  id        String         @id @default(uuid())
+  ownerId   String
+  ownerType MediaOwnerType
+  entityId  String?
+  url       String
+  s3Key     String
+  createdAt DateTime       @default(now())
+}
+
+enum AvailabilityStatus {
+  AVAILABLE
+  BUSY
+  NOT_LOOKING
+}
+
+enum SubscriptionStatus {
+  PENDING
+  ACTIVE
+  PAST_DUE
+  CANCELLED
+  EXPIRED
+}
+
+enum PaymentStatus {
+  CREATED
+  CAPTURED
+  FAILED
+  REFUNDED
+}
+
+model WorkExperience {
+  id           String    @id @default(uuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title        String
+  organization String
+  startDate    DateTime
+  endDate      DateTime?
+  description  String?
+  createdAt    DateTime  @default(now())
+}
+
+model ActorProfile {
+  id                 String             @id @default(uuid())
+  userId             String             @unique
+  user               User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  availabilityStatus AvailabilityStatus @default(NOT_LOOKING)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  filmCredits        FilmCredit[]
+}
+
+model FilmCredit {
+  id             String       @id @default(uuid())
+  actorProfileId String
+  actorProfile   ActorProfile @relation(fields: [actorProfileId], references: [id], onDelete: Cascade)
+  tmdbMovieId    Int
+  title          String
+  releaseYear    Int?
+  posterUrl      String?
+  roleName       String
+  createdAt      DateTime     @default(now())
+}
+
+model Post {
+  id        String        @id @default(uuid())
+  authorId  String
+  author    User          @relation("PostAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  content   String
+  imageUrl  String?
+  createdAt DateTime      @default(now())
+
+  likes     PostLike[]
+  comments  PostComment[]
+}
+
+model PostLike {
+  id        String   @id @default(uuid())
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([postId, userId])
+}
+
+model PostComment {
+  id        String   @id @default(uuid())
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content   String
+  createdAt DateTime @default(now())
+}
+
+model Subscription {
+  id                   String             @id @default(uuid())
+  userId               String
+  user                 User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status               SubscriptionStatus @default(PENDING)
+  razorpaySubscriptionId String?          @unique
+  currentPeriodEnd     DateTime?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+
+  payments             Payment[]
+}
+
+model Payment {
+  id               String        @id @default(uuid())
+  userId           String
+  user             User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subscriptionId   String?
+  subscription     Subscription? @relation(fields: [subscriptionId], references: [id])
+  razorpayOrderId  String        @unique
+  razorpayPaymentId String?
+  amount           Int
+  currency         String        @default("INR")
+  status           PaymentStatus @default(CREATED)
+  createdAt        DateTime      @default(now())
+}

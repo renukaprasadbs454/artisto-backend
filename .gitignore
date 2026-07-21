@@ -1,3 +1,39 @@
+# Dependencies
+node_modules
+**/node_modules
+
+# Build outputs
+dist
+dist-ssr
+build
+**/dist
+**/build
+
+# Environment variables & secrets
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+**/.env
+**/.env.local
+!**/.env.example
+
+# Development & Planning Artifacts (Excluded per security & clean repo guidelines)
+.agents
+.claude
+.claude-flow
+.codex
+.planning
+.swarm
+.mcp.json
+04-prd-addendum.md
+05-high-level-design.md
+06-low-level-design.md
+CLAUDE.md
+old_dashboard.txt
+ruvector.db
+
 # Logs
 logs
 *.log
@@ -7,16 +43,12 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
-*.local
-
-# Editor directories and files
+# OS & Editor files
+.DS_Store
+Thumbs.db
 .vscode/*
 !.vscode/extensions.json
 .idea
-.DS_Store
 *.suo
 *.ntvs*
 *.njsproj
