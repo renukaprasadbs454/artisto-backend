@@ -25,7 +25,13 @@ app.use(express.json());
 // Parse cookies (needed for refresh token)
 app.use(cookieParser());
 
+import swaggerUi from 'swagger-ui-express';
+import { swaggerDocument } from './swagger';
 import { apiLimiter } from './middleware/rateLimiter';
+
+// ─── Swagger API Documentation ────────────────────────────────────
+
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // ─── Health check & Base Routes ───────────────────────────────────
 
@@ -38,7 +44,7 @@ app.get('/health', (_req: Request, res: Response) => {
 });
 
 app.get('/api/v1', (_req: Request, res: Response) => {
-  res.status(200).json({ status: 'ok', message: 'Artisto API v1' });
+  res.status(200).json({ status: 'ok', message: 'Artisto API v1', docs: 'http://localhost:4000/api-docs' });
 });
 
 // ─── API routes ───────────────────────────────────────────────────
