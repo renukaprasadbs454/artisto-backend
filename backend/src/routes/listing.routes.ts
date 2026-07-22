@@ -10,12 +10,13 @@ import {
   deleteListing,
   createListingSchema,
   updateListingSchema,
+  listingQuerySchema,
 } from '../controllers/listing.controller';
 
 const router = Router();
 
 // GET /api/v1/listings — public, with search/filter query params
-router.get('/', getListings);
+router.get('/', validate(listingQuerySchema, 'query'), getListings);
 
 // GET /api/v1/listings/:id — public
 router.get('/:id', getListing);

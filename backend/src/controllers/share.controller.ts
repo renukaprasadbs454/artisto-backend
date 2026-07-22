@@ -3,39 +3,55 @@ import { prisma } from '../utils/prisma';
 
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 
-const generateOgHtml = (title: string, description: string, image: string, redirectUrl: string) => `
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+const generateOgHtml = (title: string, description: string, image: string, redirectUrl: string) => {
+  const safeTitle = escapeHtml(title);
+  const safeDescription = escapeHtml(description);
+  const safeImage = escapeHtml(image);
+  const safeRedirectUrl = escapeHtml(redirectUrl);
+
+  return `
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${title}</title>
+    <title>${safeTitle}</title>
     
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website">
-    <meta property="og:url" content="${redirectUrl}">
-    <meta property="og:title" content="${title}">
-    <meta property="og:description" content="${description}">
-    <meta property="og:image" content="${image}">
+    <meta property="og:url" content="${safeRedirectUrl}">
+    <meta property="og:title" content="${safeTitle}">
+    <meta property="og:description" content="${safeDescription}">
+    <meta property="og:image" content="${safeImage}">
 
     <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image">
-    <meta property="twitter:url" content="${redirectUrl}">
-    <meta property="twitter:title" content="${title}">
-    <meta property="twitter:description" content="${description}">
-    <meta property="twitter:image" content="${image}">
+    <meta property="twitter:url" content="${safeRedirectUrl}">
+    <meta property="twitter:title" content="${safeTitle}">
+    <meta property="twitter:description" content="${safeDescription}">
+    <meta property="twitter:image" content="${safeImage}">
 
     <!-- Meta Refresh Redirect for humans -->
-    <meta http-equiv="refresh" content="0; url=${redirectUrl}">
+    <meta http-equiv="refresh" content="0; url=${safeRedirectUrl}">
 </head>
 <body>
-    <p>Redirecting to <a href="${redirectUrl}">${title}</a>...</p>
+    <p>Redirecting to <a href="${safeRedirectUrl}">${safeTitle}</a>...</p>
     <script>
-        window.location.href = "${redirectUrl}";
+        window.location.href = encodeURI("${safeRedirectUrl}");
     </script>
 </body>
 </html>
 `;
+};
 
 /**
  * GET /api/v1/share/profile/:username

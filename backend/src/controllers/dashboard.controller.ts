@@ -35,7 +35,7 @@ export async function getSellerDashboard(req: Request, res: Response, next: Next
 
     // Sum revenue from completed orders
     const totalRevenue = completedOrders.reduce(
-      (sum, order) => sum + Number(order.listing.price),
+      (sum: number, order: any) => sum + Number(order.listing.price),
       0
     );
 

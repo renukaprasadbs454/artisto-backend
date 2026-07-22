@@ -180,7 +180,7 @@ export async function getProfileByUsername(req: Request, res: Response, next: Ne
 }
 
 export const updateRoleSchema = z.object({
-  role: z.enum(['BUYER', 'SELLER', 'ADMIN']),
+  role: z.enum(['BUYER', 'SELLER']),
 });
 
 /**

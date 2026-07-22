@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
-import { OrderStatus } from '@prisma/client';
+import { OrderStatus, Prisma } from '@prisma/client';
 import { prisma } from '../utils/prisma';
 import { ALLOWED_TRANSITIONS, TRANSITION_AUTHORIZATION, DEFAULT_PAGE, DEFAULT_LIMIT, MAX_LIMIT } from '../utils/constants';
 
@@ -54,7 +54,7 @@ export async function createOrder(req: Request, res: Response, next: NextFunctio
     }
 
     // Create Order + Conversation atomically
-    const order = await prisma.$transaction(async (tx) => {
+    const order = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const newOrder = await tx.order.create({
         data: {
           listingId,

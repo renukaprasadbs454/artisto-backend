@@ -45,25 +45,25 @@ export async function getConversations(req: Request, res: Response, next: NextFu
       orderBy: { createdAt: 'desc' },
     });
 
-    // Compute unread count for each conversation
-    const conversationsWithUnread = await Promise.all(
-      conversations.map(async (convo) => {
-        const unreadCount = await prisma.message.count({
-          where: {
-            conversationId: convo.id,
-            senderId: { not: userId },
-            readAt: null,
-          },
-        });
+    const convoIds = conversations.map((c) => c.id);
+    const unreadGroups = await prisma.message.groupBy({
+      by: ['conversationId'],
+      where: {
+        conversationId: { in: convoIds },
+        senderId: { not: userId },
+        readAt: null,
+      },
+      _count: { id: true },
+    });
 
-        return {
-          ...convo,
-          lastMessage: convo.messages[0] || null,
-          messages: undefined, // Don't send the messages array
-          unreadCount,
-        };
-      })
-    );
+    const unreadMap = new Map(unreadGroups.map((g) => [g.conversationId, g._count.id]));
+
+    const conversationsWithUnread = conversations.map((convo) => ({
+      ...convo,
+      unreadCount: unreadMap.get(convo.id) || 0,
+      lastMessage: convo.messages[0] || null,
+      messages: undefined,
+    }));
 
     res.status(200).json({ data: conversationsWithUnread });
   } catch (err) {

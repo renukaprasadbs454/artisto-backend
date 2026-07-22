@@ -16,7 +16,8 @@ export async function uploadToStorage(
   file: Express.Multer.File,
   prefix: string
 ): Promise<{ url: string; key: string }> {
-  const key = `${prefix}/${randomUUID()}-${file.originalname}`;
+  const ext = file.originalname.match(/\.[a-zA-Z0-9]+$/)?.[0] || '';
+  const key = `${prefix}/${randomUUID()}${ext}`;
 
   const { error } = await supabase.storage
     .from(BUCKET)

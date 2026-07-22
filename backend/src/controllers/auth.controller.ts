@@ -12,11 +12,12 @@ import {
   clearRefreshCookie,
 } from '../services/auth.service';
 import { isProfileComplete } from '../utils/profile';
+import { Prisma } from '@prisma/client';
 
 // ─── Validation Schemas ─────────────────────────────────────────────
 
 export const registerSchema = z.object({
-  username: z.string().min(3, 'Username must be at least 3 characters').max(30),
+  username: z.string().min(3, 'Username must be at least 3 characters').max(30).regex(/^[a-zA-Z0-9_-]+$/, 'Username can only contain letters, numbers, underscores, and hyphens'),
   email: z.string().email('Invalid email address'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
   displayName: z.string().min(1, 'Display name is required').max(100),
@@ -58,13 +59,13 @@ export async function register(req: Request, res: Response, next: NextFunction):
 
     // Create user + profile atomically — a user without a profile
     // is a state we don't want to handle everywhere else
-    const user = await prisma.$transaction(async (tx) => {
+    const user = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const newUser = await tx.user.create({
         data: {
           username,
           email,
           passwordHash,
-          role: role || 'BUYER',
+          role: role || 'SELLER',
           profile: {
             create: { displayName },
           },

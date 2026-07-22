@@ -21,23 +21,8 @@ export const addFilmCreditSchema = z.object({
  */
 export async function getActors(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    // Ensure all existing users have an ActorProfile record so everyone appears in discovery
-    const usersWithoutActorProfile = await prisma.user.findMany({
-      where: { actorProfile: null },
-      select: { id: true },
-    });
-    if (usersWithoutActorProfile.length > 0) {
-      await prisma.actorProfile.createMany({
-        data: usersWithoutActorProfile.map(u => ({
-          userId: u.id,
-          availabilityStatus: 'AVAILABLE',
-        })),
-        skipDuplicates: true,
-      });
-    }
-
-    const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 20;
+    const page = Math.max(1, parseInt(req.query.page as string) || 1);
+    const limit = Math.min(50, Math.max(1, parseInt(req.query.limit as string) || 20));
     const search = req.query.q as string;
     const location = req.query.location as string;
     const skip = (page - 1) * limit;
@@ -62,7 +47,7 @@ export async function getActors(req: Request, res: Response, next: NextFunction)
       where.user = { profile: { is: profileFilter } };
     }
 
-    if (availability) {
+    if (availability && ['AVAILABLE', 'BUSY', 'NOT_LOOKING'].includes(availability)) {
       where.availabilityStatus = availability as any;
     }
 
@@ -266,7 +251,6 @@ export async function getActorProfileByUsername(req: Request, res: Response, nex
           select: {
             id: true,
             username: true,
-            email: true,
             role: true,
             profile: {
               select: {

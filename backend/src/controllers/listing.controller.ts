@@ -57,8 +57,8 @@ export async function getListings(req: Request, res: Response, next: NextFunctio
 
     if (minPrice || maxPrice) {
       where.price = {};
-      if (minPrice) (where.price as Prisma.DecimalFilter).gte = Number(minPrice);
-      if (maxPrice) (where.price as Prisma.DecimalFilter).lte = Number(maxPrice);
+      if (minPrice && !isNaN(Number(minPrice))) (where.price as Prisma.DecimalFilter).gte = Number(minPrice);
+      if (maxPrice && !isNaN(Number(maxPrice))) (where.price as Prisma.DecimalFilter).lte = Number(maxPrice);
     }
 
     if (q) {
@@ -178,6 +178,17 @@ export async function updateListing(req: Request, res: Response, next: NextFunct
 export async function deleteListing(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const id = req.params.id as string;
+
+    const existingOrdersCount = await prisma.order.count({
+      where: { listingId: id },
+    });
+
+    if (existingOrdersCount > 0) {
+      res.status(409).json({
+        error: { code: 'CONFLICT', message: 'Cannot delete a listing that has associated orders' },
+      });
+      return;
+    }
 
     await prisma.listing.delete({
       where: { id },

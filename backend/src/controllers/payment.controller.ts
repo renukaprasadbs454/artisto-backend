@@ -12,9 +12,11 @@ const razorpay = new Razorpay({
 });
 
 export const createOrderSchema = z.object({
-  amount: z.number().positive(),
+  amount: z.number().positive().optional(),
   currency: z.string().length(3).default('INR'),
   paymentType: z.enum(['SUBSCRIPTION', 'ORDER_ESCROW']),
+  plan: z.enum(['PRO', 'AGENCY']).optional(),
+  listingId: z.string().optional(),
   relatedId: z.string().optional(),
 }).strict();
 
@@ -28,15 +30,26 @@ export const verifyOrderSchema = z.object({
 
 /**
  * POST /payments/create-order
- * Create a Razorpay order.
+ * Create a Razorpay order with server-side price derivation.
  */
 export async function createOrder(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const userId = req.user!.userId;
-    const { amount, currency, paymentType, relatedId } = req.body;
+    const { currency, paymentType, plan, listingId, amount } = req.body;
+
+    let targetAmount = amount || 999;
+    if (paymentType === 'SUBSCRIPTION') {
+      if (plan === 'AGENCY') targetAmount = 4999;
+      else targetAmount = 999;
+    } else if (listingId) {
+      const listing = await prisma.listing.findUnique({ where: { id: listingId } });
+      if (listing) {
+        targetAmount = Number(listing.price);
+      }
+    }
 
     // Razorpay works in smallest currency subunit (paise for INR)
-    const amountInSmallestUnit = Math.round(amount * 100);
+    const amountInSmallestUnit = Math.round(targetAmount * 100);
 
     const options = {
       amount: amountInSmallestUnit,
@@ -77,12 +90,33 @@ export async function createOrder(req: Request, res: Response, next: NextFunctio
 
 /**
  * POST /payments/verify
- * Verify razorpay payment signature.
+ * Verify razorpay payment signature safely with idempotency and ownership checks.
  */
 export async function verifyOrder(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const userId = req.user!.userId;
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature, paymentId, plan } = req.body;
+
+    const existingPayment = await prisma.payment.findUnique({ where: { id: paymentId } });
+    if (!existingPayment) {
+      res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Payment record not found' } });
+      return;
+    }
+
+    if (existingPayment.userId !== userId) {
+      res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Unauthorized payment verification' } });
+      return;
+    }
+
+    if (existingPayment.status !== 'CREATED') {
+      res.status(400).json({ error: { code: 'INVALID_STATE', message: 'Payment is already processed' } });
+      return;
+    }
+
+    if (existingPayment.razorpayOrderId !== razorpay_order_id) {
+      res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: 'Order ID mismatch' } });
+      return;
+    }
 
     const secret = process.env.RAZORPAY_KEY_SECRET || 'dummy_secret';
     const body = razorpay_order_id + '|' + razorpay_payment_id;
@@ -92,7 +126,9 @@ export async function verifyOrder(req: Request, res: Response, next: NextFunctio
       .update(body.toString())
       .digest('hex');
 
-    const isAuthentic = expectedSignature === razorpay_signature;
+    const expectedBuf = Buffer.from(expectedSignature);
+    const actualBuf = Buffer.from(razorpay_signature);
+    const isAuthentic = expectedBuf.length === actualBuf.length && crypto.timingSafeEqual(expectedBuf, actualBuf);
 
     if (!isAuthentic) {
       await prisma.payment.update({

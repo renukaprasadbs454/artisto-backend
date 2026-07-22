@@ -25,15 +25,25 @@ app.use(express.json());
 // Parse cookies (needed for refresh token)
 app.use(cookieParser());
 
-// ─── Health check ─────────────────────────────────────────────────
+import { apiLimiter } from './middleware/rateLimiter';
+
+// ─── Health check & Base Routes ───────────────────────────────────
+
+app.get('/', (_req: Request, res: Response) => {
+  res.status(200).json({ status: 'ok', message: 'Artisto API Service', version: 'v1' });
+});
 
 app.get('/health', (_req: Request, res: Response) => {
   res.status(200).json({ status: 'ok' });
 });
 
+app.get('/api/v1', (_req: Request, res: Response) => {
+  res.status(200).json({ status: 'ok', message: 'Artisto API v1' });
+});
+
 // ─── API routes ───────────────────────────────────────────────────
 
-app.use('/api/v1', routes);
+app.use('/api/v1', apiLimiter, routes);
 
 // ─── 404 handler ──────────────────────────────────────────────────
 

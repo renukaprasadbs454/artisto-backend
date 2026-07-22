@@ -50,7 +50,7 @@ export async function getPosts(req: Request, res: Response, next: NextFunction):
       },
     });
 
-    const formattedPosts = posts.map(post => {
+    const formattedPosts = posts.map((post: any) => {
       const { likes, ...rest } = post as any;
       return {
         ...rest,

@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import { prisma } from '../utils/prisma';
-import { uploadToStorage } from '../services/storage.service';
+import { uploadToStorage, deleteFromStorage } from '../services/storage.service';
 
 // ─── Validation Schemas ─────────────────────────────────────────────
 
@@ -33,7 +33,7 @@ export async function getPortfolio(req: Request, res: Response, next: NextFuncti
     });
 
     // Fetch images for each portfolio item from Media table
-    const itemIds = items.map((item) => item.id);
+    const itemIds = items.map((item: { id: string }) => item.id);
     const images = await prisma.media.findMany({
       where: {
         ownerType: 'PORTFOLIO',
@@ -50,7 +50,7 @@ export async function getPortfolio(req: Request, res: Response, next: NextFuncti
       imageMap.set(img.entityId!, list);
     }
 
-    const itemsWithImages = items.map((item) => ({
+    const itemsWithImages = items.map((item: any) => ({
       ...item,
       images: imageMap.get(item.id) || [],
     }));
@@ -106,6 +106,17 @@ export async function updatePortfolioItem(req: Request, res: Response, next: Nex
 export async function deletePortfolioItem(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const id = req.params.id as string;
+
+    const mediaItems = await prisma.media.findMany({
+      where: { ownerType: 'PORTFOLIO', entityId: id },
+      select: { s3Key: true },
+    });
+
+    for (const m of mediaItems) {
+      if (m.s3Key) {
+        await deleteFromStorage(m.s3Key);
+      }
+    }
 
     // Also delete associated media records
     await prisma.$transaction([
@@ -178,7 +189,7 @@ export async function uploadPortfolioImages(req: Request, res: Response, next: N
     );
 
     res.status(201).json({
-      data: mediaRecords.map((m) => ({ id: m.id, url: m.url })),
+      data: mediaRecords.map((m: { id: string; url: string }) => ({ id: m.id, url: m.url })),
     });
   } catch (err) {
     next(err);
