@@ -390,6 +390,16 @@ export const api = {
     return data.data;
   },
 
+  getAdminTableRecords: async (tableName: string) => {
+    const { data } = await axiosInstance.get(`/admin/tables/${tableName}`);
+    return data.data as any[];
+  },
+
+  deleteAdminTableRecord: async (tableName: string, id: string) => {
+    const { data } = await axiosInstance.delete(`/admin/tables/${tableName}/${id}`);
+    return data.data;
+  },
+
   // ── Movies Proxy ───────────────────────────────────────────
   searchMovies: async (query: string) => {
     const { data } = await axiosInstance.get('/movies/search', { params: { q: query } });
