@@ -165,7 +165,8 @@ export async function getTableRecords(req: Request, res: Response, next: NextFun
  */
 export async function deleteTableRecord(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const { tableName, id } = req.params;
+    const tableName = req.params.tableName as string;
+    const id = req.params.id as string;
 
     switch (tableName) {
       case 'users':

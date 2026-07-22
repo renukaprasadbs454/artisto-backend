@@ -9,9 +9,13 @@ export function validate(schema: ZodSchema, source: 'body' | 'query' | 'params' 
   return (req: Request, res: Response, next: NextFunction): void => {
     try {
       const data = schema.parse(req[source]);
-      // Replace the original data with parsed (stripped of unknown fields)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (req as any)[source] = data;
+      // Express 5 query object is a getter; mutate properties instead of reassigning the property reference
+      if (source === 'query') {
+        Object.keys(req.query).forEach((key) => delete (req.query as any)[key]);
+        Object.assign(req.query, data);
+      } else {
+        (req as any)[source] = data;
+      }
       next();
     } catch (err) {
       if (err instanceof ZodError) {
