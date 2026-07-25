@@ -15,6 +15,7 @@ export default function OpportunityDetails() {
   // Order modal state
   const [showOrderModal, setShowOrderModal] = useState(false);
   const [requirements, setRequirements] = useState("");
+  const [portfolioUrl, setPortfolioUrl] = useState("");
   const [ordering, setOrdering] = useState(false);
   const [orderError, setOrderError] = useState<string | null>(null);
 
@@ -45,12 +46,19 @@ export default function OpportunityDetails() {
       return;
     }
 
+    const trimmedUrl = portfolioUrl.trim();
+    if (trimmedUrl && !/^https?:\/\/.+/i.test(trimmedUrl)) {
+      setOrderError("Please enter a valid URL starting with http:// or https://");
+      return;
+    }
+
     try {
       setOrdering(true);
       setOrderError(null);
       await api.createOrder({
         listingId: id!,
         requirements: requirements.trim() || undefined,
+        portfolioUrl: trimmedUrl || undefined,
       });
       setShowOrderModal(false);
       navigate(`/orders`);
@@ -101,13 +109,37 @@ export default function OpportunityDetails() {
 
             {orderError && <div className="form-error">{orderError}</div>}
 
+            <div className="form-group" style={{ marginBottom: 16 }}>
+              <label className="form-label">Portfolio / Work Link *</label>
+              <input
+                type="url"
+                required
+                value={portfolioUrl}
+                onChange={(e) => setPortfolioUrl(e.target.value)}
+                placeholder="https://behance.net/yourwork, Google Drive, GitHub, etc."
+                className="form-input"
+                style={{
+                  width: '100%',
+                  padding: '10px 14px',
+                  borderRadius: 'var(--radius-md)',
+                  background: 'var(--bg-secondary)',
+                  border: '1px solid var(--border-primary)',
+                  color: 'var(--text-primary)',
+                  fontSize: 14,
+                }}
+              />
+              <span style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4, display: 'block' }}>
+                Submit link to your portfolio, demo reel, website, GitHub, or Drive folder.
+              </span>
+            </div>
+
             <div className="form-group">
               <label className="form-label">Why are you a good fit? (Optional)</label>
               <textarea
                 rows={4}
                 value={requirements}
                 onChange={(e) => setRequirements(e.target.value)}
-                placeholder="Share your experience, links to previous work, or a short pitch..."
+                placeholder="Share your experience or a short pitch..."
                 className="form-textarea"
               ></textarea>
             </div>

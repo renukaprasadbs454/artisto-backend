@@ -11,8 +11,9 @@ export default function ProfileComplete() {
     displayName: user?.profile?.displayName || "",
     bio: user?.profile?.bio || "",
     location: user?.profile?.location || "",
-    skills: user?.profile?.skills ? user?.profile?.skills.join(", ") : "",
   });
+  const [skillsList, setSkillsList] = useState<string[]>(user?.profile?.skills || []);
+  const [newSkillInput, setNewSkillInput] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(user?.profile?.avatarUrl || null);
   
   const [saving, setSaving] = useState(false);
@@ -25,6 +26,18 @@ export default function ProfileComplete() {
       navigate('/dashboard');
     }
   }, [user, navigate]);
+
+  const handleAddSkill = () => {
+    const trimmed = newSkillInput.trim().replace(/,/g, '');
+    if (trimmed && !skillsList.includes(trimmed)) {
+      setSkillsList([...skillsList, trimmed]);
+      setNewSkillInput("");
+    }
+  };
+
+  const handleRemoveSkill = (idxToRemove: number) => {
+    setSkillsList(skillsList.filter((_, idx) => idx !== idxToRemove));
+  };
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -58,11 +71,11 @@ export default function ProfileComplete() {
 
       const payload = {
         ...formData,
-        skills: formData.skills ? formData.skills.split(",").map((s) => s.trim()).filter(Boolean) : [],
+        skills: skillsList,
       };
 
       if (!payload.bio || !payload.location || payload.skills.length === 0 || !payload.displayName) {
-          setError("All fields are required to complete your profile.");
+          setError("All fields (including at least 1 skill) are required to complete your profile.");
           setSaving(false);
           return;
       }
@@ -143,15 +156,33 @@ export default function ProfileComplete() {
           </div>
 
           <div className="form-group">
-            <label className="form-label">Skills (comma separated) *</label>
-            <input
-              type="text"
-              required
-              value={formData.skills}
-              onChange={(e) => setFormData({ ...formData, skills: e.target.value })}
-              placeholder="Acting, Editing, Photography..."
-              className="form-input"
-            />
+            <label className="form-label">Skills ({skillsList.length}) *</label>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8, padding: 10, background: 'var(--bg-secondary)', border: '1px solid var(--border-primary)', borderRadius: 'var(--radius-md)', minHeight: 44 }}>
+              {skillsList.length === 0 ? (
+                <span style={{ fontSize: 12, color: 'var(--text-muted)', fontStyle: 'italic' }}>No skills added yet. Add below.</span>
+              ) : (
+                skillsList.map((skill, idx) => (
+                  <span key={idx} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(147, 51, 234, 0.25)', color: '#e9d5ff', border: '1px solid rgba(168, 85, 247, 0.4)', padding: '2px 10px', borderRadius: 9999, fontSize: 12, fontWeight: 600 }}>
+                    {skill}
+                    <button type="button" onClick={() => handleRemoveSkill(idx)} style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', fontWeight: 'bold' }}>×</button>
+                  </span>
+                ))
+              )}
+            </div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <input
+                type="text"
+                value={newSkillInput}
+                onChange={(e) => setNewSkillInput(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); handleAddSkill(); } }}
+                placeholder="Type skill name and press Enter..."
+                className="form-input"
+                style={{ flex: 1 }}
+              />
+              <button type="button" onClick={handleAddSkill} className="btn btn-secondary btn-sm">
+                + Add
+              </button>
+            </div>
           </div>
 
           <div className="form-group">

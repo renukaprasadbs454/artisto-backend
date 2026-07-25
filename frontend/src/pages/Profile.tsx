@@ -34,9 +34,17 @@ export default function Profile() {
     bio: "",
     headline: "",
     location: "",
-    skills: "",
     availabilityStatus: "NOT_LOOKING",
   });
+  const [skillsList, setSkillsList] = useState<string[]>([]);
+  const [newSkillInput, setNewSkillInput] = useState("");
+
+  // Artist Name (30-day rename rule)
+  const [artistName, setArtistName] = useState("");
+  const [savingArtistName, setSavingArtistName] = useState(false);
+  const [artistNameError, setArtistNameError] = useState<string | null>(null);
+  const [artistNameSuccess, setArtistNameSuccess] = useState(false);
+
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -77,9 +85,11 @@ export default function Profile() {
           bio: data.bio || "",
           headline: data.headline || "",
           location: data.location || "",
-          skills: data.skills ? data.skills.join(", ") : "",
           availabilityStatus: actorData?.availabilityStatus || "AVAILABLE",
         });
+
+        setSkillsList(data.skills || []);
+        setArtistName(data.user?.username || authUser?.username || "");
       } catch (err: any) {
         setError(err.response?.data?.error?.message || "Failed to load profile");
       } finally {
@@ -87,7 +97,7 @@ export default function Profile() {
       }
     };
     fetchProfile();
-  }, [username, authUser?.id]);
+  }, [username, authUser?.id, authUser?.username]);
 
   useEffect(() => {
     const fetchPortfolio = async () => {
@@ -106,9 +116,52 @@ export default function Profile() {
     fetchPortfolio();
   }, [profileUser?.userId, profileUser?.user?.id, authUser?.id]);
 
+  const handleAddSkill = () => {
+    const trimmed = newSkillInput.trim().replace(/,/g, '');
+    if (trimmed && !skillsList.includes(trimmed)) {
+      setSkillsList([...skillsList, trimmed]);
+      setNewSkillInput("");
+    }
+  };
+
+  const handleRemoveSkill = (indexToRemove: number) => {
+    setSkillsList(skillsList.filter((_, idx) => idx !== indexToRemove));
+  };
+
+  const handleSaveArtistName = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isOwnProfile || !artistName.trim()) return;
+
+    try {
+      setSavingArtistName(true);
+      setArtistNameError(null);
+      setArtistNameSuccess(false);
+
+      const res = await api.updateArtistName(artistName.trim());
+      
+      setProfileUser((prev: any) => ({
+        ...prev,
+        user: { ...prev?.user, username: res.username, artistNameChangedAt: res.artistNameChangedAt },
+      }));
+
+      setArtistNameSuccess(true);
+      setTimeout(() => setArtistNameSuccess(false), 4000);
+    } catch (err: any) {
+      setArtistNameError(err.response?.data?.error?.message || "Failed to update Artist Name");
+    } finally {
+      setSavingArtistName(false);
+    }
+  };
+
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isOwnProfile) return;
+
+    const wordCount = formData.bio ? formData.bio.trim().split(/\s+/).filter(Boolean).length : 0;
+    if (wordCount > 350) {
+      setError(`Bio exceeds maximum allowed length of 350 words (currently ${wordCount} words).`);
+      return;
+    }
 
     try {
       setSaving(true);
@@ -118,7 +171,7 @@ export default function Profile() {
 
       const payload = {
         ...profileData,
-        skills: formData.skills ? formData.skills.split(",").map((s) => s.trim()).filter(Boolean) : [],
+        skills: skillsList,
       };
 
       const updatedProfile = await api.updateProfile(payload);
@@ -331,6 +384,7 @@ export default function Profile() {
                   <h1 className="text-3xl font-extrabold text-[var(--text-primary)]">
                     {profileUser?.displayName}
                   </h1>
+                  <p className="text-sm text-purple-400 font-semibold mt-0.5">@{profileUser?.user?.username || artistName}</p>
                   <p className="text-lg text-[var(--text-secondary)] font-medium">
                     {profileUser?.headline || (profileUser?.user?.role === "CREATOR" ? "Creative Professional" : "Member")}
                   </p>
@@ -604,105 +658,226 @@ export default function Profile() {
             )}
 
             {/* SETTINGS TAB */}
-            {activeTab === "settings" && isOwnProfile && (
-              <motion.div
-                key="settings"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-              >
-                <Card className="bg-[var(--bg-card)] border-[var(--border-secondary)] shadow-lg rounded-2xl max-w-2xl">
-                  <CardContent className="p-6 md:p-8">
-                    <div className="flex items-center gap-2 mb-6">
-                      <PenTool className="w-5 h-5 text-purple-400" />
-                      <h2 className="text-xl font-bold text-[var(--text-primary)]">Edit Profile Details</h2>
-                    </div>
+            {activeTab === "settings" && isOwnProfile && (() => {
+              const lastChanged = authUser?.artistNameChangedAt ? new Date(authUser.artistNameChangedAt) : null;
+              const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
+              const isArtistNameRestricted = !!(lastChanged && (Date.now() - lastChanged.getTime() < thirtyDaysMs));
+              const nextArtistNameDate = lastChanged ? new Date(lastChanged.getTime() + thirtyDaysMs).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : null;
 
-                    {saveSuccess && (
-                      <div className="bg-emerald-900/30 text-emerald-400 p-4 rounded-xl mb-6 border border-emerald-500/20 text-sm font-medium">
-                        Profile updated successfully!
-                      </div>
-                    )}
-                    {error && (
-                      <div className="bg-red-900/30 text-red-400 p-4 rounded-xl mb-6 border border-red-500/20 text-sm font-medium">
-                        {error}
-                      </div>
-                    )}
+              return (
+                <motion.div
+                  key="settings"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="space-y-6 max-w-2xl"
+                >
+                  {/* ARTIST NAME (30-DAY RENAME RESTRICTION) */}
+                  <Card className="bg-[var(--bg-card)] border-[var(--border-secondary)] shadow-lg rounded-2xl">
+                    <CardContent className="p-6">
+                      <h3 className="text-lg font-bold text-[var(--text-primary)] mb-2 flex items-center gap-2">
+                        🎨 Artist Name
+                      </h3>
+                      <p className="text-xs text-[var(--text-muted)] mb-4">
+                        Your unique Artist handle on Artisto. You can change your Artist Name once every 30 days.
+                      </p>
 
-                    <form onSubmit={handleSaveProfile} className="space-y-5">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                      {artistNameSuccess && (
+                        <div className="bg-emerald-900/30 text-emerald-400 p-3 rounded-xl mb-4 border border-emerald-500/20 text-xs font-medium">
+                          Artist Name updated successfully!
+                        </div>
+                      )}
+                      {artistNameError && (
+                        <div className="bg-red-900/30 text-red-400 p-3 rounded-xl mb-4 border border-red-500/20 text-xs font-medium">
+                          {artistNameError}
+                        </div>
+                      )}
+
+                      <form onSubmit={handleSaveArtistName} className="space-y-3">
                         <div className="space-y-2">
-                          <label className="text-sm font-semibold text-[var(--text-secondary)]">Display Name</label>
-                          <Input
-                            required
-                            value={formData.displayName}
-                            onChange={(e) => setFormData({ ...formData, displayName: e.target.value })}
-                            placeholder="Your Name"
-                            className="bg-[var(--bg-secondary)] border-[var(--border-primary)] text-[var(--text-primary)] rounded-xl"
+                          <div className="flex justify-between items-center">
+                            <label className="text-xs font-semibold text-[var(--text-secondary)]">Artist Name Handle</label>
+                            {isArtistNameRestricted && (
+                              <span className="text-[11px] font-medium text-amber-400 bg-amber-950/60 px-2.5 py-0.5 rounded-full border border-amber-500/30">
+                                ⏳ Rename Locked
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex gap-3">
+                            <Input
+                              disabled={isArtistNameRestricted || savingArtistName}
+                              value={artistName}
+                              onChange={(e) => setArtistName(e.target.value)}
+                              placeholder="e.g. renuka_prasad"
+                              className="bg-[var(--bg-secondary)] border-[var(--border-primary)] text-[var(--text-primary)] rounded-xl font-mono text-sm"
+                            />
+                            {!isArtistNameRestricted && (
+                              <Button type="submit" disabled={savingArtistName}>
+                                {savingArtistName ? "Saving..." : "Update Name"}
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+
+                        {isArtistNameRestricted ? (
+                          <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl text-xs text-amber-300">
+                            🔒 You can change your Artist Name again after <strong>{nextArtistNameDate}</strong>.
+                          </div>
+                        ) : (
+                          <span className="text-[11px] text-[var(--text-muted)] block">
+                            Note: Once changed, you cannot change your Artist Name again for 30 days.
+                          </span>
+                        )}
+                      </form>
+                    </CardContent>
+                  </Card>
+
+                  {/* MAIN PROFILE DETAILS & SKILLS TAG CHIPS */}
+                  <Card className="bg-[var(--bg-card)] border-[var(--border-secondary)] shadow-lg rounded-2xl">
+                    <CardContent className="p-6 md:p-8">
+                      <div className="flex items-center gap-2 mb-6">
+                        <PenTool className="w-5 h-5 text-purple-400" />
+                        <h2 className="text-xl font-bold text-[var(--text-primary)]">Edit Profile Details</h2>
+                      </div>
+
+                      {saveSuccess && (
+                        <div className="bg-emerald-900/30 text-emerald-400 p-4 rounded-xl mb-6 border border-emerald-500/20 text-sm font-medium">
+                          Profile updated successfully!
+                        </div>
+                      )}
+                      {error && (
+                        <div className="bg-red-900/30 text-red-400 p-4 rounded-xl mb-6 border border-red-500/20 text-sm font-medium">
+                          {error}
+                        </div>
+                      )}
+
+                      <form onSubmit={handleSaveProfile} className="space-y-5">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                          <div className="space-y-2">
+                            <label className="text-sm font-semibold text-[var(--text-secondary)]">Full Name</label>
+                            <Input
+                              required
+                              value={formData.displayName}
+                              onChange={(e) => setFormData({ ...formData, displayName: e.target.value })}
+                              placeholder="Your Name"
+                              className="bg-[var(--bg-secondary)] border-[var(--border-primary)] text-[var(--text-primary)] rounded-xl"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-sm font-semibold text-[var(--text-secondary)]">Headline</label>
+                            <Input
+                              value={formData.headline}
+                              onChange={(e) => setFormData({ ...formData, headline: e.target.value })}
+                              placeholder="e.g. Senior Video Editor"
+                              className="bg-[var(--bg-secondary)] border-[var(--border-primary)] text-[var(--text-primary)] rounded-xl"
+                            />
+                          </div>
+                          <div className="space-y-2 md:col-span-2">
+                            <label className="text-sm font-semibold text-[var(--text-secondary)]">Location</label>
+                            <Input
+                              value={formData.location}
+                              onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                              placeholder="e.g. New York, USA"
+                              className="bg-[var(--bg-secondary)] border-[var(--border-primary)] text-[var(--text-primary)] rounded-xl"
+                            />
+                          </div>
+
+                          {/* SKILLS AS CHIP / TAG BUTTONS */}
+                          <div className="space-y-2 md:col-span-2">
+                            <label className="text-sm font-semibold text-[var(--text-secondary)]">
+                              Skills ({skillsList.length})
+                            </label>
+                            
+                            {/* Render Skills Chips */}
+                            <div className="flex flex-wrap gap-2 mb-3 min-h-[40px] p-3 bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-xl">
+                              {skillsList.length === 0 ? (
+                                <span className="text-xs text-[var(--text-muted)] italic">No skills added yet. Add skills below.</span>
+                              ) : (
+                                skillsList.map((skill, idx) => (
+                                  <span
+                                    key={idx}
+                                    className="inline-flex items-center gap-1.5 bg-purple-600/30 text-purple-200 border border-purple-500/40 px-3 py-1 rounded-full text-xs font-semibold shadow-sm animate-fadeIn"
+                                  >
+                                    {skill}
+                                    <button
+                                      type="button"
+                                      onClick={() => handleRemoveSkill(idx)}
+                                      className="w-4 h-4 rounded-full bg-purple-500/30 hover:bg-red-500 hover:text-white inline-flex items-center justify-center text-xs font-bold transition-colors ml-0.5"
+                                      title="Remove skill"
+                                    >
+                                      ×
+                                    </button>
+                                  </span>
+                                ))
+                              )}
+                            </div>
+
+                            {/* Add Skill Input */}
+                            <div className="flex gap-2">
+                              <Input
+                                value={newSkillInput}
+                                onChange={(e) => setNewSkillInput(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter' || e.key === ',') {
+                                    e.preventDefault();
+                                    handleAddSkill();
+                                  }
+                                }}
+                                placeholder="Type skill name and click Add or press Enter..."
+                                className="bg-[var(--bg-secondary)] border-[var(--border-primary)] text-[var(--text-primary)] rounded-xl text-xs flex-1"
+                              />
+                              <Button type="button" onClick={handleAddSkill} variant="outline" size="sm">
+                                + Add Skill
+                              </Button>
+                            </div>
+                          </div>
+
+                          <div className="space-y-2 md:col-span-2">
+                            <label className="text-sm font-semibold text-[var(--text-secondary)]">Availability Status</label>
+                            <select
+                              value={formData.availabilityStatus}
+                              onChange={(e) => setFormData({ ...formData, availabilityStatus: e.target.value })}
+                              className="flex h-10 w-full rounded-xl border border-[var(--border-primary)] bg-[var(--bg-secondary)] px-3 py-2 text-sm text-[var(--text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500"
+                            >
+                              <option value="AVAILABLE">Available (Actively looking for roles)</option>
+                              <option value="BUSY">Busy (Currently engaged)</option>
+                              <option value="NOT_LOOKING">Unavailable (Not looking)</option>
+                            </select>
+                          </div>
+                        </div>
+
+                        <div className="space-y-2">
+                          <div className="flex justify-between items-center">
+                            <label className="text-sm font-semibold text-[var(--text-secondary)]">Bio</label>
+                            {(() => {
+                              const words = formData.bio.trim() ? formData.bio.trim().split(/\s+/).filter(Boolean).length : 0;
+                              const isOver = words > 350;
+                              return (
+                                <span className={`text-xs font-semibold ${isOver ? 'text-red-400' : 'text-[var(--text-muted)]'}`}>
+                                  {words} / 350 words
+                                </span>
+                              );
+                            })()}
+                          </div>
+                          <textarea
+                            className="flex min-h-[120px] w-full rounded-xl border border-[var(--border-primary)] bg-[var(--bg-secondary)] px-3 py-2 text-sm placeholder:text-[var(--text-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 text-[var(--text-primary)]"
+                            value={formData.bio}
+                            onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
+                            placeholder="Tell clients about your experience (max 350 words)..."
                           />
                         </div>
-                        <div className="space-y-2">
-                          <label className="text-sm font-semibold text-[var(--text-secondary)]">Headline</label>
-                          <Input
-                            value={formData.headline}
-                            onChange={(e) => setFormData({ ...formData, headline: e.target.value })}
-                            placeholder="e.g. Senior Video Editor"
-                            className="bg-[var(--bg-secondary)] border-[var(--border-primary)] text-[var(--text-primary)] rounded-xl"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <label className="text-sm font-semibold text-[var(--text-secondary)]">Location</label>
-                          <Input
-                            value={formData.location}
-                            onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                            placeholder="e.g. New York, USA"
-                            className="bg-[var(--bg-secondary)] border-[var(--border-primary)] text-[var(--text-primary)] rounded-xl"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <label className="text-sm font-semibold text-[var(--text-secondary)]">Skills</label>
-                          <Input
-                            value={formData.skills}
-                            onChange={(e) => setFormData({ ...formData, skills: e.target.value })}
-                            placeholder="Editing, Animation, Grading (comma separated)"
-                            className="bg-[var(--bg-secondary)] border-[var(--border-primary)] text-[var(--text-primary)] rounded-xl"
-                          />
-                        </div>
 
-                        <div className="space-y-2 md:col-span-2">
-                          <label className="text-sm font-semibold text-[var(--text-secondary)]">Availability Status</label>
-                          <select
-                            value={formData.availabilityStatus}
-                            onChange={(e) => setFormData({ ...formData, availabilityStatus: e.target.value })}
-                            className="flex h-10 w-full rounded-xl border border-[var(--border-primary)] bg-[var(--bg-secondary)] px-3 py-2 text-sm text-[var(--text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500"
-                          >
-                            <option value="AVAILABLE">Available (Actively looking for roles)</option>
-                            <option value="BUSY">Busy (Currently engaged)</option>
-                            <option value="NOT_LOOKING">Unavailable (Not looking)</option>
-                          </select>
+                        <div className="pt-4 flex justify-end">
+                          <Button type="submit" size="lg" disabled={saving}>
+                            {saving ? "Saving..." : "Save Changes"}
+                          </Button>
                         </div>
-                      </div>
-
-                      <div className="space-y-2">
-                        <label className="text-sm font-semibold text-[var(--text-secondary)]">Bio</label>
-                        <textarea
-                          className="flex min-h-[120px] w-full rounded-xl border border-[var(--border-primary)] bg-[var(--bg-secondary)] px-3 py-2 text-sm placeholder:text-[var(--text-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 text-[var(--text-primary)]"
-                          value={formData.bio}
-                          onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
-                          placeholder="Tell clients about your experience..."
-                        />
-                      </div>
-
-                      <div className="pt-4 flex justify-end">
-                        <Button type="submit" size="lg" disabled={saving}>
-                          {saving ? "Saving..." : "Save Changes"}
-                        </Button>
-                      </div>
-                    </form>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            )}
+                      </form>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              );
+            })()}
           </AnimatePresence>
         </div>
       </div>

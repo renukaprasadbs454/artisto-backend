@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { useAuthStore } from "../store/auth";
-import { Home, MessageSquare, Wallet, LayoutDashboard, ShieldAlert, Lock } from "lucide-react";
+import { Home, MessageSquare, Wallet, LayoutDashboard } from "lucide-react";
 import { motion } from "framer-motion";
 import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
@@ -13,20 +13,16 @@ export default function Sidebar() {
   const { user } = useAuthStore();
   const location = useLocation();
 
-  if (!user) return null; // Don't show sidebar for logged out users
+  const isAuthPage = ["/login", "/signup", "/register"].includes(location.pathname);
+  if (!user || isAuthPage) return null; // Don't show sidebar for logged out users or on auth pages
 
   const navItems = [
     { name: "Home", href: "/", icon: Home },
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-    { name: "Marketplace", href: "/opportunities", icon: LayoutDashboard },
     { name: "Actors", href: "/actors", icon: MessageSquare },
-    { name: "Recruiters", href: "/company", icon: Wallet },
+    { name: "Recruitment", href: "/company", icon: Wallet },
     { name: "Messages", href: "/messages", icon: MessageSquare },
   ];
-
-  if (user.role === 'ADMIN') {
-    navItems.push({ name: "Admin", href: "/admin", icon: ShieldAlert });
-  }
 
   return (
     <motion.aside
@@ -84,9 +80,6 @@ export default function Sidebar() {
           <div className="flex items-center justify-between relative z-10">
             <Link to="/premium" className="inline-block bg-white/90 text-slate-900 text-xs font-bold py-2 px-4 rounded-full hover:bg-white transition-colors shadow-sm">
               Upgrade
-            </Link>
-            <Link to="/secret-admin" title="Secret Admin Portal" className="opacity-20 hover:opacity-100 transition-opacity text-white p-1">
-              <Lock className="w-3.5 h-3.5" />
             </Link>
           </div>
         </div>

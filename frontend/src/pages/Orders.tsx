@@ -138,19 +138,23 @@ export default function Orders() {
                   <div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                       <span className="category-tag" style={{ fontSize: 10 }}>
-                        {order.listing?.category}
+                        {order.listing?.category || order.opening?.roleCategory || "Recruitment Role"}
                       </span>
                       <span className="order-id">#{order.id.slice(0, 8)}</span>
                     </div>
-                    <div className="order-title">{order.listing?.title}</div>
+                    <div className="order-title">
+                      {order.listing?.title || (order.opening ? `${order.opening.title} (${order.opening.company.name})` : "Job Application")}
+                    </div>
                   </div>
                   <div style={{ textAlign: 'right' }}>
                     <span className={`status-badge status-${order.status.toLowerCase()}`}>
                       {order.status.replace("_", " ")}
                     </span>
-                    <div className="order-price" style={{ marginTop: 8 }}>
-                      ${order.listing?.price}
-                    </div>
+                    {order.listing?.price && (
+                      <div className="order-price" style={{ marginTop: 8 }}>
+                        ${order.listing.price}
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -205,9 +209,26 @@ export default function Orders() {
                     {order.requirements && (
                       <div>
                         <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 8, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                          Requirements
+                          Pitch / Details
                         </div>
                         <div className="order-requirements">{order.requirements}</div>
+                      </div>
+                    )}
+
+                    {order.portfolioUrl && (
+                      <div style={{ gridColumn: 'span 2' }}>
+                        <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 6, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                          Applicant Work / Portfolio Link
+                        </div>
+                        <a
+                          href={order.portfolioUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="btn btn-secondary btn-sm"
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: 6, textDecoration: 'none', background: 'var(--bg-glass-hover)', border: '1px solid var(--purple-500)' }}
+                        >
+                          🌐 View Applicant Work ({order.portfolioUrl.replace(/^https?:\/\//i, '').split('/')[0]}) ↗
+                        </a>
                       </div>
                     )}
                   </div>

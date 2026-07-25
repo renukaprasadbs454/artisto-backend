@@ -14,9 +14,8 @@ import Feed from "./pages/Feed";
 import ActorDiscovery from "./pages/ActorDiscovery";
 import ActorProfilePage from "./pages/ActorProfile";
 import Premium from "./pages/Premium";
-import AdminDashboard from "./pages/Admin";
-import SecretAdmin from "./pages/SecretAdmin";
 import Company from "./pages/Company";
+import CompanyDetail from "./pages/CompanyDetail";
 import Opportunities from "./pages/Opportunities";
 import Dashboard from "./pages/Dashboard";
 import Orders from "./pages/Orders";
@@ -61,6 +60,8 @@ function App() {
     }
   }, [user]);
 
+  const location = useLocation();
+
   if (authLoading) {
     return (
       <div className="auth-loading-screen">
@@ -72,8 +73,6 @@ function App() {
       </div>
     );
   }
-
-  const location = useLocation();
 
   return (
     <div className="min-h-screen text-slate-100 font-sans selection:bg-purple-500/30">
@@ -94,18 +93,18 @@ function App() {
                 <Route path="/" element={<Home />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/signup" element={<Signup />} />
+                <Route path="/register" element={<Signup />} />
                 <Route path="/u/:username" element={<Profile />} />
                 <Route path="/profile" element={<Profile />} />
-                <Route path="/profile/:username" element={<Profile />} />
                 <Route path="/profile/complete" element={<ProfileComplete />} />
+                <Route path="/profile/:username" element={<Profile />} />
                 <Route path="/actors" element={<ActorDiscovery />} />
                 <Route path="/actor/u/:username" element={<ActorProfilePage />} />
                 <Route path="/actor" element={<ActorProfilePage />} />
                 <Route path="/premium" element={<Premium />} />
-                <Route path="/admin" element={<AdminDashboard />} />
-                <Route path="/secret-admin" element={<SecretAdmin />} />
                 <Route path="/feed" element={<Feed />} />
                 <Route path="/company" element={<Company />} />
+                <Route path="/company/:pageId" element={<CompanyDetail />} />
                 <Route path="/opportunities" element={<Opportunities />} />
                 <Route path="/opportunities/:id" element={<OpportunitiesDetails />} />
                 <Route path="/dashboard" element={<Dashboard />} />

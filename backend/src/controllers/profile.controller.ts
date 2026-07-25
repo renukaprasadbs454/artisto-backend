@@ -8,7 +8,11 @@ import { signAccessToken } from '../services/auth.service';
 
 export const updateProfileSchema = z.object({
   displayName: z.string().min(1).max(100).optional(),
-  bio: z.string().max(500).optional(),
+  bio: z.string().refine((val) => {
+    if (!val) return true;
+    const wordCount = val.trim().split(/\s+/).filter(Boolean).length;
+    return wordCount <= 350;
+  }, { message: 'Bio cannot exceed 350 words' }).optional(),
   headline: z.string().max(200).optional(),
   location: z.string().max(100).optional(),
   skills: z.array(z.string()).max(20).optional(),
@@ -180,7 +184,7 @@ export async function getProfileByUsername(req: Request, res: Response, next: Ne
 }
 
 export const updateRoleSchema = z.object({
-  role: z.enum(['BUYER', 'SELLER']),
+  role: z.enum(['BUYER', 'SELLER', 'ADMIN']),
 });
 
 /**
@@ -201,6 +205,81 @@ export async function updateRole(req: Request, res: Response, next: NextFunction
         username: true,
         role: true,
       }
+    });
+
+    const accessToken = signAccessToken(updatedUser.id, updatedUser.role);
+    res.status(200).json({ data: updatedUser, accessToken });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export const updateArtistNameSchema = z.object({
+  artistName: z.string().min(3, 'Artist Name must be at least 3 characters').max(30, 'Artist Name cannot exceed 30 characters').regex(/^[a-zA-Z0-9_-]+$/, 'Artist Name can only contain letters, numbers, underscores, and hyphens'),
+});
+
+/**
+ * PATCH /profiles/artist-name
+ * Update the authenticated user's Artist Name (username) with a 30-day restriction.
+ */
+export async function updateArtistName(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const userId = req.user!.userId;
+    const { artistName } = req.body;
+
+    const currentUser = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, username: true, artistNameChangedAt: true, role: true },
+    });
+
+    if (!currentUser) {
+      res.status(404).json({ error: { code: 'NOT_FOUND', message: 'User not found' } });
+      return;
+    }
+
+    if (currentUser.username === artistName) {
+      res.status(200).json({ data: currentUser, message: 'Artist Name is unchanged' });
+      return;
+    }
+
+    // Check 30 day restriction if artistNameChangedAt exists
+    if (currentUser.artistNameChangedAt) {
+      const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
+      const timeSinceLastChange = Date.now() - new Date(currentUser.artistNameChangedAt).getTime();
+      if (timeSinceLastChange < thirtyDaysMs) {
+        const nextChangeDate = new Date(new Date(currentUser.artistNameChangedAt).getTime() + thirtyDaysMs);
+        const formattedDate = nextChangeDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        res.status(400).json({
+          error: {
+            code: 'RENAME_RESTRICTED',
+            message: `Artist Name can only be changed once every 30 days. You can change your name again after ${formattedDate}.`,
+            nextChangeDate,
+          },
+        });
+        return;
+      }
+    }
+
+    // Check if new artistName is already taken
+    const existing = await prisma.user.findUnique({ where: { username: artistName } });
+    if (existing && existing.id !== userId) {
+      res.status(400).json({ error: { code: 'BAD_REQUEST', message: 'Artist Name is already taken' } });
+      return;
+    }
+
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        username: artistName,
+        artistNameChangedAt: new Date(),
+      },
+      select: {
+        id: true,
+        username: true,
+        email: true,
+        role: true,
+        artistNameChangedAt: true,
+      },
     });
 
     const accessToken = signAccessToken(updatedUser.id, updatedUser.role);

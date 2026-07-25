@@ -180,19 +180,19 @@ export default function ActorProfilePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <div className="w-10 h-10 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin" />
+      <div className="min-h-screen bg-[var(--bg-primary)] flex items-center justify-center">
+        <div className="w-10 h-10 border-4 border-purple-500/30 border-t-purple-500 rounded-full animate-spin" />
       </div>
     );
   }
 
   if (error && !profile) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
-        <div className="text-center p-8 bg-white border border-slate-200 rounded-2xl max-w-md w-full shadow-sm">
-          <div className="text-4xl mb-4 text-slate-300">🎭</div>
-          <h3 className="text-xl font-semibold text-slate-900 mb-2">Profile Unavailable</h3>
-          <p className="text-slate-500">{error}</p>
+      <div className="min-h-screen bg-[var(--bg-primary)] flex items-center justify-center p-6">
+        <div className="text-center p-8 bg-[var(--bg-card)] border border-[var(--border-secondary)] rounded-2xl max-w-md w-full shadow-lg">
+          <div className="text-4xl mb-4 text-[var(--text-muted)]">🎭</div>
+          <h3 className="text-xl font-semibold text-[var(--text-primary)] mb-2">Profile Unavailable</h3>
+          <p className="text-[var(--text-secondary)]">{error}</p>
         </div>
       </div>
     );
@@ -201,19 +201,19 @@ export default function ActorProfilePage() {
   if (!profile) return null;
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 pb-20">
+    <div className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] pb-20">
       {/* Profile Header Banner */}
-      <div className="h-48 md:h-64 bg-gradient-to-r from-blue-100 to-indigo-100 relative">
-        <div className="absolute inset-0 bg-white/30 backdrop-blur-sm"></div>
+      <div className="h-48 md:h-64 bg-gradient-to-r from-purple-600 to-blue-600 relative rounded-b-2xl overflow-hidden shadow-lg">
+        <div className="absolute inset-0 bg-black/20 backdrop-blur-sm"></div>
       </div>
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 relative -mt-24">
         
         {/* Profile Card */}
-        <Card className="bg-white border-slate-200 shadow-md">
+        <Card className="bg-[var(--bg-card)] border-[var(--border-secondary)] shadow-xl backdrop-blur-md rounded-2xl">
           <CardContent className="p-6 md:p-8 flex flex-col md:flex-row gap-6 md:items-end">
             <div className="relative shrink-0 group">
-              <div className="w-32 h-32 md:w-40 md:h-40 rounded-full border-4 border-white bg-gradient-to-tr from-blue-100 to-indigo-200 shadow-md flex items-center justify-center text-4xl font-bold text-blue-700 overflow-hidden">
+              <div className="w-32 h-32 md:w-40 md:h-40 rounded-full border-4 border-[var(--bg-card)] bg-gradient-to-tr from-purple-500 to-blue-500 shadow-lg flex items-center justify-center text-4xl font-bold text-white overflow-hidden">
                 {profile.user.profile?.avatarUrl ? (
                   <img src={profile.user.profile.avatarUrl} alt="" className="w-full h-full object-cover" />
                 ) : (
@@ -225,10 +225,11 @@ export default function ActorProfilePage() {
             <div className="flex-1 space-y-2">
               <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
                 <div>
-                  <h1 className="text-3xl font-extrabold text-slate-900">
+                  <h1 className="text-3xl font-extrabold text-[var(--text-primary)]">
                     {profile.user.profile?.displayName || 'Unknown Actor'}
                   </h1>
-                  <p className="text-lg text-blue-600 font-medium mb-3">
+                  <p className="text-sm text-purple-400 font-semibold mt-0.5">@{profile.user.username}</p>
+                  <p className="text-lg text-[var(--text-secondary)] font-medium mb-3">
                     {profile.user.profile?.headline || 'Professional Actor'}
                   </p>
                   <Button variant="secondary" size="sm" onClick={async () => {
@@ -248,7 +249,7 @@ export default function ActorProfilePage() {
                 </div>
               </div>
               
-              <div className="flex flex-wrap items-center gap-4 text-sm text-slate-500 pt-2">
+              <div className="flex flex-wrap items-center gap-4 text-sm text-[var(--text-muted)] pt-2">
                 <div className="flex items-center gap-1.5">
                   <MapPin className="w-4 h-4" />
                   {profile.user.profile?.location || 'Unknown Location'}
@@ -256,9 +257,9 @@ export default function ActorProfilePage() {
                 
                 <div className="flex items-center gap-2">
                   <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold tracking-wide uppercase
-                    ${profile.availabilityStatus === 'AVAILABLE' ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' : 
-                      profile.availabilityStatus === 'BUSY' ? 'bg-amber-50 text-amber-600 border border-amber-200' : 
-                      'bg-slate-100 text-slate-500 border border-slate-200'}`}
+                    ${profile.availabilityStatus === 'AVAILABLE' ? 'bg-emerald-950/80 text-emerald-400 border border-emerald-500/30' : 
+                      profile.availabilityStatus === 'BUSY' ? 'bg-amber-950/80 text-amber-400 border border-amber-500/30' : 
+                      'bg-slate-800 text-slate-400 border border-slate-600/30'}`}
                   >
                     {profile.availabilityStatus === 'AVAILABLE' && <CheckCircle2 className="w-3.5 h-3.5" />}
                     {profile.availabilityStatus === 'BUSY' && <Clock className="w-3.5 h-3.5" />}
@@ -267,7 +268,7 @@ export default function ActorProfilePage() {
                   
                   {isOwnProfile && (
                     <select 
-                      className="bg-white border border-slate-200 rounded-md text-xs py-1.5 px-2 text-slate-700 focus:ring-1 focus:ring-blue-500 outline-none shadow-sm cursor-pointer"
+                      className="bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-md text-xs py-1.5 px-2 text-[var(--text-secondary)] focus:ring-1 focus:ring-purple-500 outline-none shadow-sm cursor-pointer"
                       value={profile.availabilityStatus}
                       onChange={handleStatusChange}
                       disabled={savingStatus}
@@ -284,20 +285,20 @@ export default function ActorProfilePage() {
         </Card>
 
         {/* Custom Tabs */}
-        <div className="flex gap-8 mt-8 border-b border-slate-200 overflow-x-auto hide-scrollbar">
+        <div className="flex gap-8 mt-8 border-b border-[var(--border-secondary)] overflow-x-auto hide-scrollbar">
           {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={`relative pb-4 text-sm font-semibold transition-colors whitespace-nowrap ${
-                activeTab === tab.id ? "text-blue-700" : "text-slate-500 hover:text-slate-700"
+                activeTab === tab.id ? "text-purple-400" : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
               }`}
             >
               {tab.label}
               {activeTab === tab.id && (
                 <motion.div
                   layoutId="activeTabActor"
-                  className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600"
+                  className="absolute bottom-0 left-0 right-0 h-0.5 bg-purple-600"
                 />
               )}
             </button>
@@ -318,8 +319,8 @@ export default function ActorProfilePage() {
                 className="space-y-6"
               >
                 <div className="flex justify-between items-center">
-                  <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-                    <PlayCircle className="w-6 h-6 text-blue-600" />
+                  <h2 className="text-2xl font-bold text-[var(--text-primary)] flex items-center gap-2">
+                    <PlayCircle className="w-6 h-6 text-purple-400" />
                     Film & TV Credits
                   </h2>
                   {isOwnProfile && (
@@ -419,12 +420,12 @@ export default function ActorProfilePage() {
                 </AnimatePresence>
 
                 {profile.filmCredits.length === 0 ? (
-                  <div className="text-center py-20 border border-dashed border-slate-300 rounded-2xl bg-white">
-                    <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-slate-200 text-slate-400">
+                  <div className="text-center py-20 border border-dashed border-[var(--border-secondary)] rounded-2xl bg-[var(--bg-card)]">
+                    <div className="w-16 h-16 bg-[var(--bg-secondary)] rounded-full flex items-center justify-center mx-auto mb-4 border border-[var(--border-secondary)] text-[var(--text-muted)]">
                       <Film className="w-8 h-8" />
                     </div>
-                    <h3 className="text-xl font-semibold mb-2 text-slate-900">No credits yet</h3>
-                    <p className="text-slate-500">Film and TV roles will appear here.</p>
+                    <h3 className="text-xl font-semibold mb-2 text-[var(--text-primary)]">No credits yet</h3>
+                    <p className="text-[var(--text-secondary)]">Film and TV roles will appear here.</p>
                   </div>
                 ) : (
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
@@ -436,7 +437,7 @@ export default function ActorProfilePage() {
                           initial={{ opacity: 0, scale: 0.9 }}
                           animate={{ opacity: 1, scale: 1 }}
                           exit={{ opacity: 0, scale: 0.9 }}
-                          className="group relative bg-white rounded-xl border border-slate-200 overflow-hidden hover:border-blue-300 hover:shadow-md transition-all"
+                          className="group relative bg-[var(--bg-card)] rounded-xl border border-[var(--border-secondary)] overflow-hidden hover:border-purple-500/40 hover:shadow-lg hover:shadow-purple-500/10 transition-all"
                         >
                           <div className="aspect-[2/3] w-full relative bg-slate-100">
                             {credit.posterUrl ? (
@@ -488,17 +489,17 @@ export default function ActorProfilePage() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
               >
-                <Card className="bg-white border-slate-200 max-w-3xl">
+                <Card className="bg-[var(--bg-card)] border-[var(--border-secondary)] max-w-3xl shadow-lg rounded-2xl">
                   <CardContent className="p-6 md:p-8">
-                    <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2 mb-4">
-                      <Briefcase className="w-5 h-5 text-blue-600" /> Biography
+                    <h2 className="text-xl font-bold text-[var(--text-primary)] flex items-center gap-2 mb-4">
+                      <Briefcase className="w-5 h-5 text-purple-400" /> Biography
                     </h2>
                     {profile.user.profile?.bio ? (
-                      <p className="text-slate-600 leading-relaxed whitespace-pre-line text-[15px]">
+                      <p className="text-[var(--text-secondary)] leading-relaxed whitespace-pre-line text-[15px]">
                         {profile.user.profile.bio}
                       </p>
                     ) : (
-                      <p className="text-slate-400 italic">No biography provided yet.</p>
+                      <p className="text-[var(--text-muted)] italic">No biography provided yet.</p>
                     )}
                   </CardContent>
                 </Card>

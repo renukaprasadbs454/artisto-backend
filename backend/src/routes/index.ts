@@ -12,6 +12,7 @@ import paymentRoutes from './payment.routes';
 import moviesRoutes from './movies.routes';
 import shareRoutes from './share.routes';
 import adminRoutes from './admin.routes';
+import pageRoutes from './page.routes';
 
 const router = Router();
 
@@ -28,5 +29,6 @@ router.use('/payments', paymentRoutes);
 router.use('/movies', moviesRoutes);
 router.use('/share', shareRoutes);
 router.use('/admin', adminRoutes);
+router.use('/pages', pageRoutes);
 
 export default router;

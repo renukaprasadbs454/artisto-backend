@@ -6,9 +6,10 @@ import rateLimit from 'express-rate-limit';
  */
 export const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 30,
+  max: process.env.NODE_ENV === 'production' ? 50 : 10000, // Generous limit for dev testing
   standardHeaders: true,
   legacyHeaders: false,
+  skip: () => process.env.NODE_ENV !== 'production', // Completely bypass rate limiting in local dev mode
   message: {
     error: {
       code: 'RATE_LIMIT_EXCEEDED',

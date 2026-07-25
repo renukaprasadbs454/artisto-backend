@@ -170,16 +170,47 @@ export async function deleteTableRecord(req: Request, res: Response, next: NextF
 
     switch (tableName) {
       case 'users':
-        await prisma.user.delete({ where: { id } });
+        await prisma.$transaction([
+          prisma.postLike.deleteMany({ where: { userId: id } }),
+          prisma.postComment.deleteMany({ where: { userId: id } }),
+          prisma.post.deleteMany({ where: { authorId: id } }),
+          prisma.message.deleteMany({ where: { senderId: id } }),
+          prisma.conversation.deleteMany({ where: { OR: [{ participantOneId: id }, { participantTwoId: id }] } }),
+          prisma.order.deleteMany({ where: { OR: [{ buyerId: id }, { sellerId: id }] } }),
+          prisma.listing.deleteMany({ where: { sellerId: id } }),
+          prisma.media.deleteMany({ where: { ownerId: id } }),
+          prisma.portfolioItem.deleteMany({ where: { userId: id } }),
+          prisma.workExperience.deleteMany({ where: { userId: id } }),
+          prisma.actorProfile.deleteMany({ where: { userId: id } }),
+          prisma.profile.deleteMany({ where: { userId: id } }),
+          prisma.user.delete({ where: { id } }),
+        ]);
+        break;
+      case 'profiles':
+        await prisma.profile.delete({ where: { id } });
+        break;
+      case 'actor_profiles':
+        await prisma.actorProfile.delete({ where: { id } });
         break;
       case 'listings':
-        await prisma.listing.delete({ where: { id } });
+        await prisma.$transaction([
+          prisma.order.deleteMany({ where: { listingId: id } }),
+          prisma.listing.delete({ where: { id } }),
+        ]);
         break;
       case 'orders':
-        await prisma.order.delete({ where: { id } });
+        await prisma.$transaction([
+          prisma.message.deleteMany({ where: { conversation: { orderId: id } } }),
+          prisma.conversation.deleteMany({ where: { orderId: id } }),
+          prisma.order.delete({ where: { id } }),
+        ]);
         break;
       case 'posts':
-        await prisma.post.delete({ where: { id } });
+        await prisma.$transaction([
+          prisma.postLike.deleteMany({ where: { postId: id } }),
+          prisma.postComment.deleteMany({ where: { postId: id } }),
+          prisma.post.delete({ where: { id } }),
+        ]);
         break;
       case 'payments':
         await prisma.payment.delete({ where: { id } });

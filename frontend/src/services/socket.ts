@@ -15,6 +15,9 @@ export function getSocket(): Socket {
     socket = io(WS_URL, {
       auth: { token: useAuthStore.getState().accessToken },
       autoConnect: false,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 2000,
+      reconnectionDelayMax: 10000,
     });
 
     socket.on('connect', () => {
@@ -27,6 +30,11 @@ export function getSocket(): Socket {
 
     socket.on('connect_error', (err) => {
       console.error('Socket connection error:', err.message);
+      // Stop reconnecting if auth is invalid — prevents infinite loop
+      if (err.message.includes('Unauthorized') || err.message.includes('expired')) {
+        console.warn('Socket auth failed — stopping reconnection.');
+        socket?.disconnect();
+      }
     });
   }
   return socket;

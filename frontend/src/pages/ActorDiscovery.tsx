@@ -98,10 +98,10 @@ export default function ActorDiscovery() {
                 transition={{ duration: 0.3, delay: index * 0.05 }}
               >
                 <Link to={`/actor/u/${actor.user.username}`}>
-                  <Card className="h-full hover:border-purple-300 hover:shadow-md transition-all group bg-white border-slate-200">
-                    <CardHeader className="pb-4 border-b border-slate-100">
+                  <Card className="h-full hover:border-purple-500/40 hover:shadow-lg hover:shadow-purple-500/10 transition-all group bg-[var(--bg-card)] border-[var(--border-secondary)]">
+                    <CardHeader className="pb-4 border-b border-[var(--border-secondary)]">
                       <div className="flex items-start gap-4">
-                        <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-100 to-blue-100 flex items-center justify-center text-xl font-bold text-purple-700 overflow-hidden shrink-0 shadow-sm border border-slate-200">
+                        <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-600 to-indigo-600 flex items-center justify-center text-xl font-bold text-white overflow-hidden shrink-0 shadow-md border-2 border-white/10">
                           {actor.user.profile?.avatarUrl ? (
                             <img src={actor.user.profile.avatarUrl} alt="" className="w-full h-full object-cover" />
                           ) : (
@@ -109,18 +109,19 @@ export default function ActorDiscovery() {
                           )}
                         </div>
                         <div className="min-w-0">
-                          <CardTitle className="text-lg text-slate-900 group-hover:text-purple-600 transition-colors truncate">
+                          <CardTitle className="text-lg text-[var(--text-primary)] group-hover:text-purple-400 transition-colors truncate">
                             {actor.user.profile?.displayName || 'Unknown'}
                           </CardTitle>
-                          <CardDescription className="truncate mt-1 text-slate-500">
+                          <p className="text-xs text-purple-400 font-semibold truncate mt-0.5">@{actor.user.username}</p>
+                          <CardDescription className="truncate mt-1 text-[var(--text-muted)]">
                             {actor.user.profile?.headline || 'Actor'}
                           </CardDescription>
                           
                           <div className="mt-2">
                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold
-                              ${actor.availabilityStatus === 'AVAILABLE' ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' : 
-                                actor.availabilityStatus === 'BUSY' ? 'bg-amber-50 text-amber-600 border border-amber-200' : 
-                                'bg-slate-100 text-slate-600 border border-slate-200'}`}
+                              ${actor.availabilityStatus === 'AVAILABLE' ? 'bg-emerald-950/80 text-emerald-400 border border-emerald-500/30' : 
+                                actor.availabilityStatus === 'BUSY' ? 'bg-amber-950/80 text-amber-400 border border-amber-500/30' : 
+                                'bg-slate-800 text-slate-400 border border-slate-600/30'}`}
                             >
                               {actor.availabilityStatus.replace('_', ' ')}
                             </span>
@@ -130,24 +131,24 @@ export default function ActorDiscovery() {
                     </CardHeader>
                     
                     <CardContent className="pt-4">
-                      <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 flex items-center gap-2">
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--text-muted)] mb-3 flex items-center gap-2">
                         <Video className="w-3.5 h-3.5" /> Top Credits
                       </h4>
                       {actor.filmCredits.length > 0 ? (
                         <ul className="space-y-2">
                           {actor.filmCredits.slice(0, 3).map(credit => (
                             <li key={credit.id} className="flex justify-between items-center text-sm">
-                              <span className="font-medium text-slate-700 truncate pr-2">
+                              <span className="font-medium text-[var(--text-secondary)] truncate pr-2">
                                 {credit.title}
                               </span>
-                              <span className="text-slate-500 text-xs shrink-0 bg-slate-100 px-2 py-0.5 rounded-full font-medium">
+                              <span className="text-[var(--text-muted)] text-xs shrink-0 bg-[var(--bg-tertiary)] px-2 py-0.5 rounded-full font-medium border border-[var(--border-secondary)]">
                                 {credit.releaseYear || ''}
                               </span>
                             </li>
                           ))}
                         </ul>
                       ) : (
-                        <div className="text-sm text-slate-400 italic py-2">No credits added</div>
+                        <div className="text-sm text-[var(--text-muted)] italic py-2">No credits added</div>
                       )}
                     </CardContent>
                   </Card>

@@ -41,7 +41,9 @@ axiosInstance.interceptors.response.use(
     }
 
     if (error.response?.status === 403 && error.response?.data?.error?.code === 'PROFILE_INCOMPLETE') {
-      window.location.href = '/profile/complete';
+      if (typeof window !== 'undefined' && window.location.pathname !== '/profile/complete') {
+        window.location.href = '/profile/complete';
+      }
     }
 
     return Promise.reject(error);
@@ -180,10 +182,10 @@ export const api = {
 
   updateRole: async (role: 'BUYER' | 'SELLER' | 'ADMIN') => {
     const { data } = await axiosInstance.patch('/profiles/role', { role });
-    if (data.accessToken) {
-      localStorage.setItem('accessToken', data.accessToken);
-    }
     const store = useAuthStore.getState();
+    if (data.accessToken) {
+      store.setAccessToken(data.accessToken);
+    }
     if (store.user) {
       store.setUser({ ...store.user, role } as User);
     }
@@ -231,7 +233,7 @@ export const api = {
   },
 
   // ── Orders ─────────────────────────────────────────────────
-  createOrder: async (payload: { listingId: string; requirements?: string }) => {
+  createOrder: async (payload: { listingId?: string; openingId?: string; requirements?: string; portfolioUrl?: string }) => {
     const { data } = await axiosInstance.post('/orders', payload);
     return data.data;
   },
@@ -397,6 +399,80 @@ export const api = {
 
   deleteAdminTableRecord: async (tableName: string, id: string) => {
     const { data } = await axiosInstance.delete(`/admin/tables/${tableName}/${id}`);
+    return data.data;
+  },
+
+  // ── Artist Name (30-day rule) ──────────────────────────────
+  updateArtistName: async (artistName: string) => {
+    const { data } = await axiosInstance.patch('/profiles/artist-name', { artistName });
+    const store = useAuthStore.getState();
+    if (data.accessToken) {
+      store.setAccessToken(data.accessToken);
+    }
+    if (store.user) {
+      store.setUser({ ...store.user, username: artistName, artistNameChangedAt: data.data?.artistNameChangedAt || new Date().toISOString() } as User);
+    }
+    return data.data;
+  },
+
+  // ── Recruiter Pages System ──────────────────────────────────
+  createPage: async (payload: { name: string; description?: string; logoUrl?: string; bannerUrl?: string }) => {
+    const { data } = await axiosInstance.post('/pages', payload);
+    return data.data;
+  },
+
+  getPages: async (params?: { q?: string }) => {
+    const { data } = await axiosInstance.get('/pages', { params });
+    return data.data as any[];
+  },
+
+  getMyPages: async () => {
+    const { data } = await axiosInstance.get('/pages/my');
+    return data.data as any[];
+  },
+
+  getPage: async (id: string) => {
+    const { data } = await axiosInstance.get(`/pages/${id}`);
+    return data.data;
+  },
+
+  updatePage: async (id: string, payload: Record<string, unknown>) => {
+    const { data } = await axiosInstance.patch(`/pages/${id}`, payload);
+    return data.data;
+  },
+
+  deletePage: async (id: string) => {
+    const { data } = await axiosInstance.delete(`/pages/${id}`);
+    return data.data;
+  },
+
+  addCompany: async (pageId: string, payload: { name: string; industry?: string; logoUrl?: string; websiteUrl?: string; isRecruitmentOpen?: boolean }) => {
+    const { data } = await axiosInstance.post(`/pages/${pageId}/companies`, payload);
+    return data.data;
+  },
+
+  updateCompany: async (companyId: string, payload: Record<string, unknown>) => {
+    const { data } = await axiosInstance.patch(`/pages/companies/${companyId}`, payload);
+    return data.data;
+  },
+
+  deleteCompany: async (companyId: string) => {
+    const { data } = await axiosInstance.delete(`/pages/companies/${companyId}`);
+    return data.data;
+  },
+
+  addOpening: async (companyId: string, payload: { title: string; roleCategory: string; description: string; location?: string; salaryRange?: string; isOpen?: boolean }) => {
+    const { data } = await axiosInstance.post(`/pages/companies/${companyId}/openings`, payload);
+    return data.data;
+  },
+
+  updateOpening: async (openingId: string, payload: Record<string, unknown>) => {
+    const { data } = await axiosInstance.patch(`/pages/openings/${openingId}`, payload);
+    return data.data;
+  },
+
+  deleteOpening: async (openingId: string) => {
+    const { data } = await axiosInstance.delete(`/pages/openings/${openingId}`);
     return data.data;
   },
 

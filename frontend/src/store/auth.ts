@@ -19,6 +19,7 @@ export interface User {
   emailVerified: boolean;
   profile: UserProfile | null;
   suspended: boolean;
+  artistNameChangedAt?: string;
   createdAt: string;
   profileComplete?: boolean;
 }

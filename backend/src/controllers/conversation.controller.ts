@@ -34,7 +34,12 @@ export async function getConversations(req: Request, res: Response, next: NextFu
           select: { id: true, profile: { select: { displayName: true, avatarUrl: true } } },
         },
         order: {
-          select: { id: true, status: true, listing: { select: { title: true } } },
+          select: {
+            id: true,
+            status: true,
+            listing: { select: { title: true } },
+            opening: { select: { title: true, company: { select: { name: true } } } },
+          },
         },
         messages: {
           orderBy: { createdAt: 'desc' },

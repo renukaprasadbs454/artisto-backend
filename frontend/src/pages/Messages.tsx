@@ -262,7 +262,9 @@ export default function Messages() {
                       )}
                     </div>
                     {convo.order && (
-                      <p className="convo-order-title">{convo.order.listing.title}</p>
+                      <p className="convo-order-title">
+                        {convo.order.listing?.title || (convo.order as any).opening?.title || 'Application'}
+                      </p>
                     )}
                     {convo.lastMessage && (
                       <p className="convo-last-message">
@@ -314,7 +316,7 @@ export default function Messages() {
                       <h3>{other?.profile?.displayName || "Unknown"}</h3>
                       {activeConvo.order && (
                         <p className="chat-header-order">
-                          Re: {activeConvo.order.listing.title} •{" "}
+                          Re: {activeConvo.order.listing?.title || (activeConvo.order as any).opening?.title || 'Application'} •{" "}
                           <span className={`status-${activeConvo.order.status.toLowerCase()}`}>
                             {activeConvo.order.status}
                           </span>

@@ -271,10 +271,10 @@ function Navbar() {
           ) : (
             <div className="flex items-center gap-2">
               <Link to="/login">
-                <Button variant="ghost" size="sm" className="font-medium">Log in</Button>
+                <Button variant="ghost" size="sm" className="font-semibold text-slate-300 hover:text-white">Log in</Button>
               </Link>
               <Link to="/signup">
-                <Button size="sm" className="font-medium bg-slate-900 text-white hover:bg-slate-800 rounded-full px-5">Sign up</Button>
+                <Button size="sm" className="font-bold bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-full px-5 shadow-md shadow-purple-500/20">Sign up</Button>
               </Link>
             </div>
           )}

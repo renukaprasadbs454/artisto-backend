@@ -120,18 +120,18 @@ export default function AdminDashboard() {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 p-6 md:p-10">
+    <div className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] p-6 md:p-10">
       <div className="max-w-7xl mx-auto space-y-8">
         
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center text-red-600 shadow-sm">
+            <div className="w-12 h-12 bg-red-950/80 border border-red-500/30 rounded-xl flex items-center justify-center text-red-400 shadow-sm">
               <Activity className="w-6 h-6" />
             </div>
             <div>
-              <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">Admin Command Center</h1>
-              <p className="text-slate-500">Platform control, live statistics, and Supabase database CRUD table editor.</p>
+              <h1 className="text-3xl font-extrabold tracking-tight text-white">Admin Command Center</h1>
+              <p className="text-[var(--text-muted)] text-sm">Platform control, live statistics, and database CRUD table editor.</p>
             </div>
           </div>
 
@@ -139,7 +139,7 @@ export default function AdminDashboard() {
             href={SUPABASE_EDITOR_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white font-semibold px-5 py-2.5 rounded-xl shadow-sm transition-all"
+            className="inline-flex items-center gap-2 bg-purple-600 hover:bg-purple-500 text-white font-semibold px-5 py-2.5 rounded-xl shadow-md transition-all text-sm"
           >
             <Database className="w-4 h-4" />
             Open Supabase Table Editor
@@ -148,14 +148,14 @@ export default function AdminDashboard() {
         </div>
 
         {error && (
-          <div className="p-4 bg-red-50 text-red-600 border border-red-200 rounded-lg font-medium">
+          <div className="p-4 bg-red-950/80 text-red-400 border border-red-500/30 rounded-xl text-sm font-medium">
             {error}
           </div>
         )}
 
         {loading ? (
           <div className="flex justify-center py-20">
-            <div className="w-10 h-10 border-4 border-slate-200 border-t-red-600 rounded-full animate-spin" />
+            <div className="w-10 h-10 border-4 border-purple-500/30 border-t-red-500 rounded-full animate-spin" />
           </div>
         ) : (
           <motion.div 
@@ -166,14 +166,14 @@ export default function AdminDashboard() {
             {/* Stats Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {statCards.map((stat, idx) => (
-                <Card key={idx} className="border-slate-200 bg-white shadow-sm hover:shadow-md transition-shadow">
+                <Card key={idx} className="border-[var(--border-secondary)] bg-[var(--bg-card)] shadow-lg hover:border-purple-500/30 transition-all rounded-2xl">
                   <CardContent className="p-6">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm font-semibold text-slate-500 mb-1">{stat.title}</p>
-                        <h3 className="text-3xl font-bold text-slate-900">{stat.value}</h3>
+                        <p className="text-xs font-semibold text-[var(--text-muted)] mb-1 uppercase tracking-wider">{stat.title}</p>
+                        <h3 className="text-3xl font-bold text-white">{stat.value}</h3>
                       </div>
-                      <div className={`w-12 h-12 rounded-full ${stat.bg} flex items-center justify-center ${stat.color}`}>
+                      <div className={`w-12 h-12 rounded-2xl ${stat.bg} flex items-center justify-center ${stat.color} border border-white/10 shadow-inner`}>
                         <stat.icon className="w-6 h-6" />
                       </div>
                     </div>
@@ -183,28 +183,29 @@ export default function AdminDashboard() {
             </div>
 
             {/* Moderation Section */}
-            <Card className="border-slate-200 bg-white shadow-sm">
+            <Card className="border-[var(--border-secondary)] bg-[var(--bg-card)] shadow-lg rounded-2xl">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <ShieldAlert className="w-5 h-5 text-slate-700" />
+                <CardTitle className="flex items-center gap-2 text-white">
+                  <ShieldAlert className="w-5 h-5 text-red-400" />
                   Security & User Moderation
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleSuspend} className="space-y-4">
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-700">Suspend User by UUID / Username / Email</label>
+                    <label className="text-xs font-semibold text-[var(--text-secondary)] block">Suspend User by UUID / Username / Email</label>
                     <div className="flex gap-3 max-w-xl">
                       <Input 
                         placeholder="Enter username, email, or UUID..."
                         value={suspendUserId}
                         onChange={(e) => setSuspendUserId(e.target.value)}
-                        className="flex-1 bg-slate-50 border-slate-200"
+                        className="flex-1 bg-[var(--bg-secondary)] border-[var(--border-primary)] text-white"
                       />
                       <Button 
                         type="submit" 
                         variant="destructive"
                         disabled={isSuspending || !suspendUserId}
+                        className="rounded-xl px-5"
                       >
                         {isSuspending ? 'Suspending...' : 'Suspend User'}
                       </Button>
@@ -214,11 +215,11 @@ export default function AdminDashboard() {
               </CardContent>
             </Card>
 
-            {/* ─── SUPABASE DATABASE TABLE EDITOR / CRUD COMPONENT ─────────────────── */}
-            <Card className="border-slate-200 bg-white shadow-sm overflow-hidden">
-              <CardHeader className="bg-slate-900 text-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            {/* ─── DATABASE TABLE EDITOR / CRUD COMPONENT ─────────────────── */}
+            <Card className="border-[var(--border-secondary)] bg-[var(--bg-card)] shadow-xl rounded-2xl overflow-hidden">
+              <CardHeader className="bg-slate-950 border-b border-white/10 p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center text-purple-400">
+                  <div className="w-10 h-10 bg-purple-950/80 border border-purple-500/30 rounded-xl flex items-center justify-center text-purple-400">
                     <Database className="w-5 h-5" />
                   </div>
                   <div>
@@ -232,7 +233,7 @@ export default function AdminDashboard() {
                     onClick={() => loadTableData(activeTable)}
                     variant="outline"
                     size="sm"
-                    className="border-slate-700 text-slate-300 hover:bg-slate-800 bg-slate-900"
+                    className="border-white/10 text-slate-300 hover:bg-white/10 bg-slate-900 rounded-xl"
                   >
                     <RefreshCw className={`w-4 h-4 mr-2 ${loadingTable ? 'animate-spin' : ''}`} />
                     Refresh Table
@@ -242,15 +243,15 @@ export default function AdminDashboard() {
 
               <CardContent className="p-6 space-y-6">
                 {/* Table Tabs */}
-                <div className="flex flex-wrap gap-2 border-b border-slate-200 pb-4">
+                <div className="flex flex-wrap gap-2 border-b border-[var(--border-secondary)] pb-4">
                   {TABLE_LIST.map((t) => (
                     <button
                       key={t.id}
                       onClick={() => setActiveTable(t.id)}
-                      className={`px-4 py-2 text-sm font-semibold rounded-lg transition-all ${
+                      className={`px-4 py-2 text-xs font-bold rounded-xl transition-all ${
                         activeTable === t.id
-                          ? 'bg-purple-600 text-white shadow-sm'
-                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                          ? 'bg-purple-600 text-white shadow-md shadow-purple-500/20'
+                          : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-white border border-[var(--border-primary)]'
                       }`}
                     >
                       {t.label}
@@ -259,7 +260,7 @@ export default function AdminDashboard() {
                 </div>
 
                 {tableError && (
-                  <div className="p-4 bg-red-50 text-red-600 border border-red-200 rounded-lg text-sm">
+                  <div className="p-4 bg-red-950/80 text-red-400 border border-red-500/30 rounded-xl text-xs">
                     {tableError}
                   </div>
                 )}
@@ -267,16 +268,16 @@ export default function AdminDashboard() {
                 {/* Table Data View */}
                 {loadingTable ? (
                   <div className="flex justify-center py-12">
-                    <div className="w-8 h-8 border-4 border-slate-200 border-t-purple-600 rounded-full animate-spin" />
+                    <div className="w-8 h-8 border-4 border-purple-500/30 border-t-purple-500 rounded-full animate-spin" />
                   </div>
                 ) : tableData.length === 0 ? (
-                  <div className="text-center py-12 text-slate-500 font-medium">
+                  <div className="text-center py-12 text-[var(--text-muted)] text-sm font-medium">
                     No records found in '{activeTable}' table.
                   </div>
                 ) : (
-                  <div className="overflow-x-auto border border-slate-200 rounded-xl shadow-inner max-h-[500px]">
+                  <div className="overflow-x-auto border border-[var(--border-secondary)] rounded-xl shadow-inner max-h-[500px]">
                     <table className="w-full text-left text-xs">
-                      <thead className="bg-slate-100 text-slate-700 font-bold uppercase sticky top-0 border-b border-slate-200">
+                      <thead className="bg-slate-950 text-slate-300 font-bold uppercase sticky top-0 border-b border-white/10">
                         <tr>
                           {Object.keys(tableData[0]).map((key) => (
                             <th key={key} className="px-4 py-3 whitespace-nowrap">
@@ -286,11 +287,11 @@ export default function AdminDashboard() {
                           <th className="px-4 py-3 whitespace-nowrap text-right">Actions</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-slate-100 bg-white">
+                      <tbody className="divide-y divide-white/5 bg-[var(--bg-secondary)]">
                         {tableData.map((row, idx) => (
-                          <tr key={row.id || idx} className="hover:bg-slate-50/80 transition-colors">
+                          <tr key={row.id || idx} className="hover:bg-white/5 transition-colors">
                             {Object.entries(row).map(([k, v]: [string, any]) => (
-                              <td key={k} className="px-4 py-3 whitespace-nowrap max-w-xs truncate text-slate-800 font-mono">
+                              <td key={k} className="px-4 py-3 whitespace-nowrap max-w-xs truncate text-slate-200 font-mono text-[11px]">
                                 {typeof v === 'object' ? JSON.stringify(v) : String(v ?? '')}
                               </td>
                             ))}
@@ -300,7 +301,7 @@ export default function AdminDashboard() {
                                   onClick={() => handleDeleteRecord(row.id)}
                                   variant="ghost"
                                   size="sm"
-                                  className="text-red-600 hover:bg-red-50 h-7 px-2"
+                                  className="text-red-400 hover:bg-red-950/60 hover:text-red-300 h-7 px-2 rounded-lg"
                                   title="Delete Record"
                                 >
                                   <Trash2 className="w-4 h-4" />

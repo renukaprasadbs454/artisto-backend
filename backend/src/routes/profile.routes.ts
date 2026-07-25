@@ -10,7 +10,9 @@ import {
   updateProfileSchema,
   getProfileByUsername,
   updateRole,
-  updateRoleSchema
+  updateRoleSchema,
+  updateArtistName,
+  updateArtistNameSchema,
 } from '../controllers/profile.controller';
 
 const router = Router();
@@ -26,6 +28,9 @@ router.patch('/me', requireAuth, validate(updateProfileSchema), updateProfile);
 
 // PATCH /api/v1/profiles/role — requires auth
 router.patch('/role', requireAuth, validate(updateRoleSchema), updateRole);
+
+// PATCH /api/v1/profiles/artist-name — requires auth
+router.patch('/artist-name', requireAuth, validate(updateArtistNameSchema), updateArtistName);
 
 // POST /api/v1/profiles/me/avatar — requires auth, multipart upload
 router.post('/me/avatar', requireAuth, upload.single('avatar'), uploadAvatar);

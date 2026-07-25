@@ -36,16 +36,17 @@ enum MediaOwnerType {
 }
 
 model User {
-  id               String   @id @default(uuid())
-  username         String   @unique
-  email            String   @unique
-  passwordHash     String
-  role             Role     @default(BUYER)
-  refreshTokenHash String?
-  emailVerified    Boolean  @default(false)
-  suspended        Boolean  @default(false)
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  id                  String   @id @default(uuid())
+  username            String   @unique
+  email               String   @unique
+  passwordHash        String
+  role                Role     @default(BUYER)
+  refreshTokenHash    String?
+  emailVerified       Boolean  @default(false)
+  suspended           Boolean  @default(false)
+  artistNameChangedAt DateTime?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 
   profile        Profile?
   portfolioItems PortfolioItem[]
@@ -62,6 +63,7 @@ model User {
   postComments    PostComment[]
   subscriptions   Subscription[]
   payments        Payment[]
+  recruiterPages  RecruiterPage[] @relation("RecruiterPages")
 }
 
 model Profile {
@@ -108,17 +110,20 @@ model Listing {
 }
 
 model Order {
-  id           String      @id @default(uuid())
-  listingId    String
-  listing      Listing     @relation(fields: [listingId], references: [id])
+  id           String            @id @default(uuid())
+  listingId    String?
+  listing      Listing?          @relation(fields: [listingId], references: [id])
+  openingId    String?
+  opening      RecruiterOpening? @relation(fields: [openingId], references: [id])
   buyerId      String
-  buyer        User        @relation("BuyerOrders", fields: [buyerId], references: [id])
+  buyer        User              @relation("BuyerOrders", fields: [buyerId], references: [id])
   sellerId     String
-  seller       User        @relation("SellerOrders", fields: [sellerId], references: [id])
-  status       OrderStatus @default(PENDING)
+  seller       User              @relation("SellerOrders", fields: [sellerId], references: [id])
+  status       OrderStatus       @default(PENDING)
   requirements String?
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
+  portfolioUrl String?
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
 
   conversation Conversation?
 }
@@ -271,4 +276,49 @@ model Payment {
   currency         String        @default("INR")
   status           PaymentStatus @default(CREATED)
   createdAt        DateTime      @default(now())
+}
+
+model RecruiterPage {
+  id          String   @id @default(uuid())
+  ownerId     String
+  owner       User     @relation("RecruiterPages", fields: [ownerId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  logoUrl     String?
+  bannerUrl   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  companies RecruiterCompany[]
+}
+
+model RecruiterCompany {
+  id                String        @id @default(uuid())
+  pageId            String
+  page              RecruiterPage @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  name              String
+  industry          String?
+  logoUrl           String?
+  websiteUrl        String?
+  isRecruitmentOpen Boolean       @default(true)
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  openings RecruiterOpening[]
+}
+
+model RecruiterOpening {
+  id           String           @id @default(uuid())
+  companyId    String
+  company      RecruiterCompany @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  title        String
+  roleCategory String
+  description  String
+  location     String?
+  salaryRange  String?
+  isOpen       Boolean          @default(true)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  orders Order[]
 }
