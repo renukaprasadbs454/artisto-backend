@@ -4,6 +4,7 @@ import { validate } from '../middleware/validate';
 import {
   createPage,
   getPages,
+  getOpenings,
   getMyPages,
   getPage,
   updatePage,
@@ -26,6 +27,7 @@ const router = Router();
 
 // Public routes
 router.get('/', getPages);
+router.get('/openings', getOpenings);
 router.get('/my', requireAuth, getMyPages);
 router.get('/:id', getPage);
 

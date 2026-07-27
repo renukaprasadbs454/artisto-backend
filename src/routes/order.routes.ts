@@ -8,6 +8,8 @@ import {
   updateOrderStatus,
   createOrderSchema,
   updateOrderStatusSchema,
+  getRecruiterApplications,
+  approveApplication,
 } from '../controllers/order.controller';
 
 const router = Router();
@@ -17,6 +19,12 @@ router.post('/', requireAuth, requireProfileComplete, validate(createOrderSchema
 
 // GET /api/v1/orders — requires auth (returns current user's orders)
 router.get('/', requireAuth, requireProfileComplete, getOrders);
+
+// GET /api/v1/orders/recruiter-applications — recruiter sees all job applications (sorted by status)
+router.get('/recruiter-applications', requireAuth, requireProfileComplete, getRecruiterApplications);
+
+// POST /api/v1/orders/:id/approve-application — recruiter approves + unlocks direct Messages
+router.post('/:id/approve-application', requireAuth, requireProfileComplete, approveApplication);
 
 // GET /api/v1/orders/:id — requires auth + participant
 router.get('/:id', requireAuth, requireProfileComplete, getOrder);

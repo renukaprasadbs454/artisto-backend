@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
+import { Prisma } from '@prisma/client';
 import { prisma } from '../utils/prisma';
 
 // ─── Zod Schemas ────────────────────────────────────────────────────
@@ -61,6 +62,71 @@ export async function createPage(req: Request, res: Response, next: NextFunction
     });
 
     res.status(201).json({ data: page });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/**
+ * GET /pages/openings
+ * List all public role openings with pagination (limit, offset) and search.
+ */
+export async function getOpenings(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const q = req.query.q as string | undefined;
+    const limit = Math.min(parseInt(req.query.limit as string || '10', 10), 100);
+    const offset = parseInt(req.query.offset as string || '0', 10);
+
+    const where: Prisma.RecruiterOpeningWhereInput = {
+      isOpen: true,
+      company: { isRecruitmentOpen: true },
+    };
+
+    if (q) {
+      where.OR = [
+        { title: { contains: q, mode: 'insensitive' } },
+        { roleCategory: { contains: q, mode: 'insensitive' } },
+        { description: { contains: q, mode: 'insensitive' } },
+        { company: { name: { contains: q, mode: 'insensitive' } } },
+        { company: { page: { name: { contains: q, mode: 'insensitive' } } } },
+      ];
+    }
+
+    const totalCount = await prisma.recruiterOpening.count({ where });
+
+    const openings = await prisma.recruiterOpening.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      skip: offset,
+      take: limit,
+      include: {
+        company: {
+          include: {
+            page: {
+              include: {
+                owner: {
+                  select: {
+                    id: true,
+                    username: true,
+                    profile: { select: { displayName: true, avatarUrl: true } },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    res.status(200).json({
+      data: openings,
+      pagination: {
+        limit,
+        offset,
+        total: totalCount,
+        hasMore: offset + openings.length < totalCount,
+      },
+    });
   } catch (err) {
     next(err);
   }

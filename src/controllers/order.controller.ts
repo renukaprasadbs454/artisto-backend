@@ -92,41 +92,18 @@ export async function createOrder(req: Request, res: Response, next: NextFunctio
       itemTitle = listing.title;
     }
 
-    // Create Order + Conversation atomically
-    const order = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      const newOrder = await tx.order.create({
-        data: {
-          listingId: listingId || null,
-          openingId: openingId || null,
-          buyerId,
-          sellerId,
-          requirements,
-          portfolioUrl: portfolioUrl || null,
-        },
-      });
-
-      // Auto-create conversation
-      const conversation = await tx.conversation.create({
-        data: {
-          orderId: newOrder.id,
-          participantOneId: buyerId,
-          participantTwoId: sellerId,
-        },
-      });
-
-      // Send initial application notification message
-      const pitchText = requirements ? `\n\nPitch/Details:\n${requirements}` : '';
-      const workLinkText = portfolioUrl ? `\n\nPortfolio/Work Link:\n${portfolioUrl}` : '';
-
-      await tx.message.create({
-        data: {
-          conversationId: conversation.id,
-          senderId: buyerId,
-          content: `📥 New Job Application submitted for "${itemTitle}".${pitchText}${workLinkText}`,
-        },
-      });
-
-      return newOrder;
+    // ✅ Only create Order record — Conversation + initial Message are created
+    //    LATER only after recruiter explicitly approves the application via
+    //    the separate Applications page (grant messaging permission flow).
+    const order = await prisma.order.create({
+      data: {
+        listingId: listingId || null,
+        openingId: openingId || null,
+        buyerId,
+        sellerId,
+        requirements,
+        portfolioUrl: portfolioUrl || null,
+      },
     });
 
     res.status(201).json({ data: order });
@@ -295,6 +272,133 @@ export async function updateOrderStatus(req: Request, res: Response, next: NextF
     });
 
     res.status(200).json({ data: updated });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/**
+ * GET /orders/recruiter-applications
+ * List all job applications a recruiter has received (as seller),
+ * with full opening/company and candidate profile data.
+ * Query params: status (PENDING | ACCEPTED | IN_PROGRESS | DELIVERED | COMPLETED | CANCELLED | ALL)
+ */
+export async function getRecruiterApplications(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const userId = req.user!.userId;
+    const statusFilter = req.query.status as OrderStatus | 'ALL' | undefined;
+
+    const where: Prisma.OrderWhereInput = {
+      sellerId: userId,
+      openingId: { not: null },
+    };
+
+    if (statusFilter && statusFilter !== 'ALL') {
+      where.status = statusFilter as OrderStatus;
+    }
+
+    const applications = await prisma.order.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        opening: {
+          include: {
+            company: {
+              include: {
+                page: { select: { id: true, name: true } },
+              },
+            },
+          },
+        },
+        buyer: {
+          select: {
+            id: true,
+            username: true,
+            profile: { select: { displayName: true, avatarUrl: true, bio: true, headline: true, location: true } },
+          },
+        },
+        conversation: { select: { id: true } },
+      },
+    });
+
+    res.status(200).json({ data: applications });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/**
+ * POST /orders/:id/approve-application
+ * Recruiter approves an application (must be PENDING + caller is seller).
+ * Updates status -> ACCEPTED, creates Conversation, posts initial application message.
+ * Only now will both users see the thread in their Messages section.
+ */
+export async function approveApplication(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const userId = req.user!.userId;
+    const id = req.params.id as string;
+
+    const order = await prisma.order.findUnique({
+      where: { id },
+      include: {
+        opening: { include: { company: true } },
+      },
+    });
+
+    if (!order) {
+      res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Application not found' } });
+      return;
+    }
+
+    if (order.sellerId !== userId) {
+      res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only the recruiter can approve this application' } });
+      return;
+    }
+
+    if (order.status !== OrderStatus.PENDING) {
+      res.status(400).json({ error: { code: 'BAD_REQUEST', message: `Application is already ${order.status} (only PENDING can be approved)` } });
+      return;
+    }
+
+    if (!order.opening) {
+      res.status(400).json({ error: { code: 'BAD_REQUEST', message: 'This order is not tied to a recruiter opening' } });
+      return;
+    }
+
+    const opening = order.opening;
+
+    const approved = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      const updatedOrder = await tx.order.update({
+        where: { id: order.id },
+        data: { status: OrderStatus.ACCEPTED },
+      });
+
+      // Create conversation (now both users see thread appear in Messages)
+      const conversation = await tx.conversation.create({
+        data: {
+          orderId: order.id,
+          participantOneId: order.buyerId,
+          participantTwoId: order.sellerId,
+        },
+      });
+
+      // Send initial application notification message so thread content is seeded
+      const itemTitle = `${opening.title} at ${opening.company.name}`;
+      const pitchText = order.requirements ? `\n\nPitch/Details:\n${order.requirements}` : '';
+      const workLinkText = order.portfolioUrl ? `\n\nPortfolio/Work Link:\n${order.portfolioUrl}` : '';
+
+      await tx.message.create({
+        data: {
+          conversationId: conversation.id,
+          senderId: order.buyerId,
+          content: `📥 Job Application APPROVED for "${itemTitle}".${pitchText}${workLinkText}\n\n✅ You can now chat directly with the candidate.`,
+        },
+      });
+
+      return { ...updatedOrder, conversationId: conversation.id };
+    });
+
+    res.status(200).json({ data: approved });
   } catch (err) {
     next(err);
   }
