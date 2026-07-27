@@ -1,47 +1,91 @@
-# Artisto Backend API
+# Artisto Backend
 
-Node.js / Express / Prisma / PostgreSQL backend powering the Artisto recruitment & creative talent platform.
+This is the backend for Artisto, a freelance services marketplace. It is a Node.js application built with Express, TypeScript, and Prisma.
 
-## Server Details
-- **Base URL**: `http://localhost:4000/api/v1`
-- **Port**: `4000` (configured via `PORT` environment variable)
-- **Environment**: Express + TypeScript + Prisma ORM + Socket.IO
+## Getting Started
 
----
+These instructions will get you a copy of the project up and running on your local machine for development and testing purposes.
 
-## 🔒 Backend-Only Admin Administration
+### Prerequisites
 
-Per security architecture requirements, the Admin panel is **NOT accessible from the frontend UI**. Admin operations are strictly restricted to protected backend API routes accessible only by authenticated users holding the `ADMIN` role.
+- [Node.js](https://nodejs.org/) (v18 or later recommended)
+- [npm](https://www.npmjs.com/)
+- A running PostgreSQL database
 
-### Admin Authentication & Authorization
-1. **Authentication**: All admin endpoints require a valid JWT Bearer Access Token in the `Authorization` header (`Authorization: Bearer <access_token>`).
-2. **Role Check**: Admin routes are protected with `requireRole('ADMIN')` middleware. Non-admin users attempting to access these routes receive `403 Forbidden`.
+### Installation
 
-### Admin Routes & Wiring (`/api/v1/admin`)
+1.  **Clone the repository:**
+    ```bash
+    git clone https://github.com/renukaprasadbs454/artisto-backend.git
+    cd artisto-backend/backend
+    ```
 
-The admin routes are wired in [app.ts](file:///d:/artisto/backend/src/app.ts) via `router.use('/admin', adminRoutes)`:
+2.  **Install dependencies:**
+    ```bash
+    npm install
+    ```
 
-| Method | Endpoint | Description | Auth Requirement |
-|--------|----------|-------------|------------------|
-| `GET` | `/api/v1/admin/stats` | System overview statistics (user count, orders, listings, revenue) | `requireAuth` + `requireRole('ADMIN')` |
-| `PATCH` | `/api/v1/admin/users/:userId/suspend` | Suspend or unsuspend a user account | `requireAuth` + `requireRole('ADMIN')` |
-| `GET` | `/api/v1/admin/tables/:tableName` | Inspect database table records with pagination | `requireAuth` + `requireRole('ADMIN')` |
-| `DELETE` | `/api/v1/admin/tables/:tableName/:id` | Delete a specific database record by ID | `requireAuth` + `requireRole('ADMIN')` |
+3.  **Set up environment variables:**
+    Create a `.env` file in the `backend` directory and add the necessary environment variables. You can use `.env.example` as a template.
+    ```bash
+    cp .env.example .env
+    ```
+    You will need to fill in your database connection string and other secrets.
 
-### How to Access Admin Functionality Programmatically
-Admin actions can be performed via standard HTTP clients (Postman, cURL, or server-side scripts) by authenticating as an `ADMIN` user:
+4.  **Run database migrations:**
+    ```bash
+    npm run prisma:migrate
+    ```
 
-```bash
-# 1. Login as Admin
-POST http://localhost:4000/api/v1/auth/login
-Content-Type: application/json
+5.  **Seed the database (optional):**
+    If you want to populate your database with initial data, run:
+    ```bash
+    npm run prisma:seed
+    ```
 
-{
-  "email": "admin@artisto.com",
-  "password": "AdminPassword123"
-}
+## Available Scripts
 
-# 2. Access Admin Endpoints using returned accessToken
-GET http://localhost:4000/api/v1/admin/stats
-Authorization: Bearer <admin_access_token>
-```
+In the project directory, you can run:
+
+-   `npm run dev`: Runs the app in development mode using `ts-node-dev`.
+-   `npm run build`: Compiles the TypeScript code to JavaScript.
+-   `npm run start`: Starts the compiled app.
+-   `npm run test`: Runs the test suite using `vitest`.
+-   `npm run prisma:generate`: Generates the Prisma client.
+-   `npm run prisma:migrate`: Applies database migrations.
+-   `npm run prisma:studio`: Opens the Prisma Studio to view and edit your data.
+-   `npm run prisma:seed`: Seeds the database.
+-   `npm run create-admin`: Runs a script to create a new admin user.
+
+## API Endpoints
+
+The API routes are defined in `src/routes`. Here is a brief overview:
+
+-   `/api/auth`: Authentication routes (login, register)
+-   `/api/actors`: Actor-related routes
+-   `/api/admin`: Admin-only routes
+-   `/api/conversations`: Messaging and conversation routes
+-   `/api/dashboard`: User dashboard routes
+-   `/api/listings`: Service listing routes
+-   `/api/movies`: Movie-related routes
+-   `/api/orders`: Order management routes
+-   `/api/payments`: Payment processing routes
+-   `/api/portfolio`: User portfolio routes
+-   `/api/posts`: Post and social routes
+-   `/api/profile`: User profile management
+-   `/api/share`: Sharing routes
+
+For more details, the API is documented with Swagger. Once the server is running, you can access the Swagger UI at `/api-docs`.
+
+## Technologies Used
+
+-   **[Node.js](https://nodejs.org/)**: JavaScript runtime environment
+-   **[Express](https://expressjs.com/)**: Web framework for Node.js
+-   **[TypeScript](https://www.typescriptlang.org/)**: Typed superset of JavaScript
+-   **[Prisma](https://www.prisma.io/)**: Next-generation ORM for Node.js and TypeScript
+-   **[PostgreSQL](https://www.postgresql.org/)**: Open source object-relational database
+-   **[Socket.IO](https://socket.io/)**: For real-time communication (e.g., messaging)
+-   **[Zod](https://zod.dev/)**: TypeScript-first schema validation
+-   **[JWT](https://jwt.io/)**: For authentication
+-   **[Swagger](https://swagger.io/)**: For API documentation
+-   **[Vitest](https://vitest.dev/)**: For unit and integration testing
