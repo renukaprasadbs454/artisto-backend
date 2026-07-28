@@ -330,13 +330,17 @@ export async function getRecruiterApplications(req: Request, res: Response, next
 /**
  * POST /orders/:id/approve-application
  * Recruiter approves an application (must be PENDING + caller is seller).
- * Updates status -> ACCEPTED, creates Conversation, posts initial application message.
- * Only now will both users see the thread in their Messages section.
+ * Updates status -> ACCEPTED.
+ * Only when `grantMessaging` === true in the request body will a Conversation be created
+ * and the initial application message posted. Messaging can also be enabled later via
+ * the `grant-messaging` endpoint below.
+ * This keeps core approval flow independent of communication permissions.
  */
 export async function approveApplication(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const userId = req.user!.userId;
     const id = req.params.id as string;
+    const grantMessaging = Boolean((req.body && typeof req.body === 'object') ? (req.body as any).grantMessaging : false);
 
     const order = await prisma.order.findUnique({
       where: { id },
@@ -373,32 +377,129 @@ export async function approveApplication(req: Request, res: Response, next: Next
         data: { status: OrderStatus.ACCEPTED },
       });
 
-      // Create conversation (now both users see thread appear in Messages)
-      const conversation = await tx.conversation.create({
-        data: {
-          orderId: order.id,
-          participantOneId: order.buyerId,
-          participantTwoId: order.sellerId,
-        },
-      });
+      let conversationId: string | undefined;
 
-      // Send initial application notification message so thread content is seeded
-      const itemTitle = `${opening.title} at ${opening.company.name}`;
-      const pitchText = order.requirements ? `\n\nPitch/Details:\n${order.requirements}` : '';
-      const workLinkText = order.portfolioUrl ? `\n\nPortfolio/Work Link:\n${order.portfolioUrl}` : '';
+      if (grantMessaging) {
+        const existingConvo = await tx.conversation.findFirst({
+          where: { orderId: order.id },
+        });
 
-      await tx.message.create({
-        data: {
-          conversationId: conversation.id,
-          senderId: order.buyerId,
-          content: `📥 Job Application APPROVED for "${itemTitle}".${pitchText}${workLinkText}\n\n✅ You can now chat directly with the candidate.`,
-        },
-      });
+        const conversation = existingConvo
+          ? await tx.conversation.update({
+              where: { id: existingConvo.id },
+              data: {
+                participantOneId: order.buyerId,
+                participantTwoId: order.sellerId,
+              },
+            })
+          : await tx.conversation.create({
+              data: {
+                orderId: order.id,
+                participantOneId: order.buyerId,
+                participantTwoId: order.sellerId,
+              },
+            });
 
-      return { ...updatedOrder, conversationId: conversation.id };
+        if (!existingConvo) {
+          const itemTitle = `${opening.title} at ${opening.company.name}`;
+          const pitchText = order.requirements ? `\n\nPitch/Details:\n${order.requirements}` : '';
+          const workLinkText = order.portfolioUrl ? `\n\nPortfolio/Work Link:\n${order.portfolioUrl}` : '';
+
+          await tx.message.create({
+            data: {
+              conversationId: conversation.id,
+              senderId: order.buyerId,
+              content: `📥 Job Application APPROVED for "${itemTitle}".${pitchText}${workLinkText}\n\n✅ You can now chat directly with the candidate.`,
+            },
+          });
+        }
+
+        conversationId = conversation.id;
+      }
+
+      return { ...updatedOrder, conversationId };
     });
 
     res.status(200).json({ data: approved });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/**
+ * POST /orders/:id/grant-messaging
+ * Recruiter grants direct messaging access on an application AFTER approval.
+ * Creates (or reuses) a 1:1 conversation tied to the order and seeds the initial
+ * approved-application message. Caller must be the seller (recruiter).
+ */
+export async function grantMessagingPermission(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const userId = req.user!.userId;
+    const id = req.params.id as string;
+
+    const order = await prisma.order.findUnique({
+      where: { id },
+      include: {
+        opening: { include: { company: true } },
+      },
+    });
+
+    if (!order) {
+      res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Application not found' } });
+      return;
+    }
+
+    if (order.sellerId !== userId) {
+      res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only the recruiter can grant messaging access' } });
+      return;
+    }
+
+    if (order.status === OrderStatus.CANCELLED) {
+      res.status(400).json({ error: { code: 'BAD_REQUEST', message: 'Cancelled applications cannot have messaging enabled' } });
+      return;
+    }
+
+    const opening = order.opening;
+
+    const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      const existingConvo = await tx.conversation.findFirst({
+        where: { orderId: order.id },
+      });
+
+      const conversation = existingConvo
+        ? await tx.conversation.update({
+            where: { id: existingConvo.id },
+            data: {
+              participantOneId: order.buyerId,
+              participantTwoId: order.sellerId,
+            },
+          })
+        : await tx.conversation.create({
+            data: {
+              orderId: order.id,
+              participantOneId: order.buyerId,
+              participantTwoId: order.sellerId,
+            },
+          });
+
+      if (!existingConvo && opening) {
+        const itemTitle = `${opening.title} at ${opening.company.name}`;
+        const pitchText = order.requirements ? `\n\nPitch/Details:\n${order.requirements}` : '';
+        const workLinkText = order.portfolioUrl ? `\n\nPortfolio/Work Link:\n${order.portfolioUrl}` : '';
+
+        await tx.message.create({
+          data: {
+            conversationId: conversation.id,
+            senderId: order.buyerId,
+            content: `📥 Job Application APPROVED for "${itemTitle}".${pitchText}${workLinkText}\n\n✅ You can now chat directly with the candidate.`,
+          },
+        });
+      }
+
+      return { conversationId: conversation.id };
+    });
+
+    res.status(200).json({ data: result });
   } catch (err) {
     next(err);
   }

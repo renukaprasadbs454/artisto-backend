@@ -10,6 +10,7 @@ import {
   updateOrderStatusSchema,
   getRecruiterApplications,
   approveApplication,
+  grantMessagingPermission,
 } from '../controllers/order.controller';
 
 const router = Router();
@@ -23,8 +24,12 @@ router.get('/', requireAuth, requireProfileComplete, getOrders);
 // GET /api/v1/orders/recruiter-applications — recruiter sees all job applications (sorted by status)
 router.get('/recruiter-applications', requireAuth, requireProfileComplete, getRecruiterApplications);
 
-// POST /api/v1/orders/:id/approve-application — recruiter approves + unlocks direct Messages
+// POST /api/v1/orders/:id/approve-application — recruiter approves.
+// Optional body `grantMessaging` controls whether conversation is created.
 router.post('/:id/approve-application', requireAuth, requireProfileComplete, approveApplication);
+
+// POST /api/v1/orders/:id/grant-messaging — recruiter enables direct messaging on an approved app
+router.post('/:id/grant-messaging', requireAuth, requireProfileComplete, grantMessagingPermission);
 
 // GET /api/v1/orders/:id — requires auth + participant
 router.get('/:id', requireAuth, requireProfileComplete, getOrder);

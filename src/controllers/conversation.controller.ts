@@ -37,8 +37,10 @@ export async function getConversations(req: Request, res: Response, next: NextFu
           select: {
             id: true,
             status: true,
+            sellerId: true,
+            buyerId: true,
             listing: { select: { title: true } },
-            opening: { select: { title: true, company: { select: { name: true } } } },
+            opening: { select: { id: true, title: true, roleCategory: true, company: { select: { name: true } } } },
           },
         },
         messages: {
@@ -79,6 +81,16 @@ export async function getConversations(req: Request, res: Response, next: NextFu
 /**
  * POST /conversations
  * Find or create a conversation for a given orderId.
+ *
+ * IMPORTANT — Recruiter-opening orders (openingId set):
+ *   - A conversation can only come into existence via the recruiter's
+ *     explicit "approve with messaging" or "grant messaging" actions
+ *     (handled in order.controller: approveApplication / grantMessagingPermission).
+ *   - This endpoint only returns an EXISTING conversation for recruiter
+ *     openings; it never creates one for either side. That prevents the
+ *     recruiter or applicant from accidentally "enabling" messages by
+ *     simply opening the Messages UI.
+ * For regular marketplace listing orders: either participant may create it.
  */
 export async function createConversation(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
@@ -102,12 +114,31 @@ export async function createConversation(req: Request, res: Response, next: Next
       return;
     }
 
-    // Find existing conversation for this order, or create one
+    const isRecruiterOpening = !!order.openingId;
+
+    // Find existing conversation for this order
     let conversation = await prisma.conversation.findUnique({
       where: { orderId },
     });
 
-    if (!conversation) {
+    // Recruiter-opening gate: only return the conversation if one already
+    // exists server-side (i.e. recruiter explicitly granted messaging via
+    // approveApplication / grantMessagingPermission).  Never auto-create.
+    if (isRecruiterOpening) {
+      if (!conversation) {
+        res.status(403).json({
+          error: {
+            code: 'MESSAGING_NOT_GRANTED',
+            message:
+              order.sellerId === userId
+                ? 'Messaging is not enabled for this candidate yet. Check the "Acknowledge messaging permission" box and click Enable Messaging to start a conversation.'
+                : 'The recruiter has not enabled direct messaging for this application yet.',
+          },
+        });
+        return;
+      }
+    } else if (!conversation) {
+      // Regular marketplace listing order: create on-demand
       conversation = await prisma.conversation.create({
         data: {
           orderId,

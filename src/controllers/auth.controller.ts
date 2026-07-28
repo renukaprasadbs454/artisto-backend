@@ -220,7 +220,7 @@ export async function login(req: Request, res: Response, next: NextFunction): Pr
     // Same error for "no such email" and "wrong password" — don't leak which one
     if (!user || !(await comparePassword(password, user.passwordHash))) {
       res.status(401).json({
-        error: { code: 'UNAUTHENTICATED', message: 'Invalid email or password' },
+        error: { code: 'INVALID_CREDENTIALS', message: 'Invalid email or password' },
       });
       return;
     }
@@ -394,6 +394,50 @@ export async function usernameSuggestions(req: Request, res: Response, next: Nex
     }
 
     res.status(200).json({ data: suggestions });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/**
+ * GET /auth/check-username?username=foo[&excludeSelf=true]
+ * Public (no auth) when excludeSelf is absent/false. When excludeSelf=true,
+ * requires authentication (requireAuth in route registration), and a match
+ * against the caller's own username is treated as "available".
+ * Normalizes input: trims + lowercases.
+ * Returns data: { username: string, available: boolean, valid: boolean }
+ *   valid:     whether the input matches the registration username regex (length, chars)
+ *   available: true if no other user owns this username (case-insensitive).
+ *              False if taken OR invalid.
+ */
+export async function checkUsernameAvailability(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const raw = (req.query.username as string || '').trim();
+    const username = raw.toLowerCase();
+    const excludeSelf = String(req.query.excludeSelf || '').toLowerCase() === 'true';
+    const selfUserId = excludeSelf && req.user ? req.user.userId : undefined;
+
+    if (!username) {
+      res.status(200).json({ data: { username: raw, available: false, valid: false } });
+      return;
+    }
+
+    const validChars = /^[a-z0-9_-]{3,20}$/.test(username);
+
+    const exists = await prisma.user.findFirst({
+      where: { username: { equals: username, mode: 'insensitive' } },
+      select: { id: true },
+    });
+
+    const isTaken = !!exists && exists.id !== selfUserId;
+
+    res.status(200).json({
+      data: {
+        username,
+        valid: validChars,
+        available: validChars && !isTaken,
+      },
+    });
   } catch (err) {
     next(err);
   }

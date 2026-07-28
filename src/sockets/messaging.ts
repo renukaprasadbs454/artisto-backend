@@ -64,6 +64,14 @@ export function setupMessaging(io: Server): void {
      * Write to Postgres first (DB is source of truth), then emit to room.
      * The socket.rooms.has() check stops a client from emitting to an
      * arbitrary conversationId it was never authorized to join.
+     *
+     * For recruiter-opening orders: the buyer (applicant) is additionally
+     * blocked from sending until the recruiter has explicitly granted
+     * messaging permission. We detect "permission granted" by verifying
+     * the conversation row was already created (approveApplication /
+     * grantMessagingPermission create it server-side) AND the order's
+     * conversationId relationship links to it — checked by loading the
+     * associated order via the conversation.
      */
     socket.on('message:send', async ({ conversationId, content }: { conversationId: string; content: string }) => {
       try {
@@ -75,6 +83,44 @@ export function setupMessaging(io: Server): void {
 
         if (!content || content.trim().length === 0) {
           socket.emit('error', { message: 'Message content cannot be empty' });
+          return;
+        }
+
+        // Permission gate: recruiter-opening orders restrict the buyer
+        // until a conversation has been explicitly created server-side
+        // (this happens via approveApplication / grantMessagingPermission
+        // and is represented by the order.conversation linking back).
+        const conversation = await prisma.conversation.findUnique({
+          where: { id: conversationId },
+          include: {
+            order: {
+              select: {
+                id: true,
+                buyerId: true,
+                sellerId: true,
+                openingId: true,
+                conversation: { select: { id: true } },
+              },
+            },
+          },
+        });
+
+        if (!conversation || !conversation.order) {
+          socket.emit('error', { message: 'Conversation not found' });
+          return;
+        }
+
+        const { order } = conversation;
+        const isCallerBuyer = order.buyerId === socket.data.userId;
+        const isRecruiterOpening = !!order.openingId;
+
+        // Permission granted iff the order.conversation links back to this conversation
+        // (i.e. recruiter explicitly ran grantMessagingPermission / approve-with-messaging).
+        if (isRecruiterOpening && isCallerBuyer && order.conversation?.id !== conversationId) {
+          socket.emit('error', {
+            code: 'MESSAGING_NOT_GRANTED',
+            message: 'The recruiter has not enabled direct messaging for this application yet.',
+          });
           return;
         }
 
