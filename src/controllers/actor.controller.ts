@@ -108,10 +108,12 @@ export async function getActorProfile(req: Request, res: Response, next: NextFun
         user: {
           select: {
             id: true,
+            username: true,
             profile: {
               select: {
                 displayName: true,
                 avatarUrl: true,
+                bannerUrl: true,
                 headline: true,
                 location: true,
                 bio: true,
@@ -154,6 +156,15 @@ export async function upsertActorProfile(req: Request, res: Response, next: Next
       include: {
         filmCredits: {
           orderBy: { releaseYear: 'desc' },
+        },
+        user: {
+          select: {
+            id: true,
+            username: true,
+            profile: {
+              select: { displayName: true, avatarUrl: true, bannerUrl: true, headline: true, location: true, bio: true, skills: true },
+            },
+          },
         },
       },
     });

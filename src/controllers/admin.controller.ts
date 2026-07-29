@@ -242,6 +242,11 @@ export async function forcePasswordReset(req: Request, res: Response, next: Next
       return;
     }
 
+    if (targetUser.role === 'ADMIN' && mustReset) {
+      res.status(400).json({ error: { code: 'ADMIN_PASSWORD_RESET_DISABLED', message: 'Administrator accounts cannot be forced through the password recovery flow.' } });
+      return;
+    }
+
     const user = await prisma.user.update({
       where: { id: targetUser.id },
       data: { mustResetPassword: mustReset },

@@ -16,6 +16,10 @@ import {
   resetPasswordSchema,
   changePassword,
   changePasswordSchema,
+  forgotPassword,
+  forgotPasswordSchema,
+  confirmForgotPassword,
+  confirmForgotPasswordSchema,
 } from '../controllers/auth.controller';
 
 const router = Router();
@@ -25,6 +29,9 @@ router.post('/register', authLimiter, validate(registerSchema), register);
 
 // POST /api/v1/auth/login — public, rate-limited
 router.post('/login', authLimiter, validate(loginSchema), login);
+
+router.post('/forgot-password', authLimiter, validate(forgotPasswordSchema), forgotPassword);
+router.post('/confirm-forgot-password', authLimiter, validate(confirmForgotPasswordSchema), confirmForgotPassword);
 
 // POST /api/v1/auth/refresh — cookie-based, rate-limited
 router.post('/refresh', authLimiter, refresh);

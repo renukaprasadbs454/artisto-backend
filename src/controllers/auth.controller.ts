@@ -10,6 +10,9 @@ import {
   verifyRefreshToken,
   setRefreshCookie,
   clearRefreshCookie,
+  signPasswordResetToken,
+  verifyPasswordResetToken,
+  invalidateUserTokens,
 } from '../services/auth.service';
 import { isProfileComplete } from '../utils/profile';
 import { Prisma } from '@prisma/client';
@@ -46,6 +49,12 @@ export const resetPasswordSchema = z.object({
 export const changePasswordSchema = z.object({
   currentPassword: z.string().min(1, 'Current password is required'),
   newPassword: resetPasswordSchema.shape.password,
+});
+
+export const forgotPasswordSchema = z.object({ email: z.string().email('Invalid email address') });
+export const confirmForgotPasswordSchema = z.object({
+  token: z.string().min(1, 'Reset token is required'),
+  password: resetPasswordSchema.shape.password,
 });
 
 // ─── Controllers ────────────────────────────────────────────────────
@@ -136,6 +145,10 @@ export async function register(req: Request, res: Response, next: NextFunction):
  */
 export async function resetPassword(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
+    if (req.user!.role === 'ADMIN') {
+      res.status(403).json({ error: { code: 'ADMIN_PASSWORD_RESET_DISABLED', message: 'Password recovery is not available for administrator accounts.' } });
+      return;
+    }
     const parsed = resetPasswordSchema.safeParse(req.body);
     if (!parsed.success) {
       const message = parsed.error.errors.map((e) => e.message).join(', ');
@@ -163,6 +176,66 @@ export async function resetPassword(req: Request, res: Response, next: NextFunct
     const { passwordHash: _, refreshTokenHash: __, ...safeUser } = user as any;
 
     res.status(200).json({ data: { user: safeUser, accessToken } });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/** POST /auth/forgot-password — send a short-lived recovery link without revealing account existence. */
+export async function forgotPassword(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const parsed = forgotPasswordSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: { code: 'INVALID_INPUT', message: 'Please enter a valid email address' } });
+      return;
+    }
+
+    const user = await prisma.user.findUnique({ where: { email: parsed.data.email.toLowerCase() } });
+    // Admin recovery is intentionally disabled. Return the same generic response
+    // as an unknown email so account role cannot be discovered from this endpoint.
+    if (user && user.role !== 'ADMIN') {
+      const token = signPasswordResetToken(user.id);
+      const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/$/, '');
+      const resetUrl = `${frontendUrl}/reset-password?token=${encodeURIComponent(token)}`;
+
+      // Local-only workflow: copy the URL from the backend terminal into a browser.
+      if (process.env.NODE_ENV !== 'production') {
+        console.info(`Password reset link for ${user.email}: ${resetUrl}`);
+      }
+    }
+
+    res.status(200).json({ data: { message: 'If an account matches that email, a password reset link has been created.' } });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/** POST /auth/confirm-forgot-password — consume a valid recovery link. */
+export async function confirmForgotPassword(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const parsed = confirmForgotPasswordSchema.safeParse(req.body);
+    if (!parsed.success) {
+      const message = parsed.error.errors.map((e) => e.message).join(', ');
+      res.status(400).json({ error: { code: 'INVALID_INPUT', message } });
+      return;
+    }
+    const claim = verifyPasswordResetToken(parsed.data.token);
+    if (!claim) {
+      res.status(400).json({ error: { code: 'INVALID_RESET_TOKEN', message: 'This password reset link is invalid or has expired.' } });
+      return;
+    }
+    const user = await prisma.user.findUnique({ where: { id: claim.userId } });
+    if (!user || user.role === 'ADMIN' || (user.tokenInvalidBefore && claim.issuedAt <= user.tokenInvalidBefore)) {
+      res.status(400).json({ error: { code: 'INVALID_RESET_TOKEN', message: 'This password reset link is invalid or has expired.' } });
+      return;
+    }
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { passwordHash: await hashPassword(parsed.data.password), refreshTokenHash: null, mustResetPassword: false },
+    });
+    await invalidateUserTokens(user.id);
+    clearRefreshCookie(res);
+    res.status(200).json({ data: { message: 'Password updated. You can now sign in.' } });
   } catch (err) {
     next(err);
   }

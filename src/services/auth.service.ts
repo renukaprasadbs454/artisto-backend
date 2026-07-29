@@ -16,6 +16,7 @@ const ARGON_MEMORY = Number(process.env.ARGON_MEMORY) || 1 << 16; // 64 MB
 const ARGON_PARALLELISM = Number(process.env.ARGON_PARALLELISM) || 1;
 
 const ACCESS_TOKEN_EXPIRY = process.env.ACCESS_TOKEN_EXPIRY || '15m';
+const PASSWORD_RESET_TOKEN_EXPIRY = process.env.PASSWORD_RESET_TOKEN_EXPIRY || '15m';
 const REFRESH_TOKEN_EXPIRY_MS = Number(process.env.REFRESH_TOKEN_EXPIRY_MS) || 30 * 24 * 60 * 60 * 1000; // 30 days
 // refresh tokens will be hashed with Argon2 as well for consistency
 
@@ -54,6 +55,36 @@ export function signAccessToken(userId: string, role: string): string {
   }
   const secret = process.env.JWT_ACCESS_SECRET!;
   return jwt.sign({ userId, role } as any, secret as jwt.Secret, { algorithm: 'HS256', expiresIn: ACCESS_TOKEN_EXPIRY } as jwt.SignOptions);
+}
+
+/** Create a short-lived, single-purpose token for a password recovery link. */
+export function signPasswordResetToken(userId: string): string {
+  const privateKey = process.env.JWT_ACCESS_PRIVATE_KEY;
+  const payload = { userId, purpose: 'password-reset' };
+  if (privateKey) {
+    return jwt.sign(payload, privateKey.replace(/\\n/g, '\n') as jwt.Secret, {
+      algorithm: 'RS256',
+      expiresIn: PASSWORD_RESET_TOKEN_EXPIRY,
+    } as jwt.SignOptions);
+  }
+  return jwt.sign(payload, process.env.JWT_ACCESS_SECRET! as jwt.Secret, {
+    algorithm: 'HS256',
+    expiresIn: PASSWORD_RESET_TOKEN_EXPIRY,
+  } as jwt.SignOptions);
+}
+
+/** Validate a password recovery token and return its subject and issue time. */
+export function verifyPasswordResetToken(token: string): { userId: string; issuedAt: Date } | null {
+  try {
+    const key = process.env.JWT_ACCESS_PUBLIC_KEY
+      ? process.env.JWT_ACCESS_PUBLIC_KEY.replace(/\\n/g, '\n')
+      : process.env.JWT_ACCESS_SECRET!;
+    const decoded = jwt.verify(token, key as jwt.Secret, process.env.JWT_ACCESS_PUBLIC_KEY ? { algorithms: ['RS256'] } : { algorithms: ['HS256'] }) as jwt.JwtPayload;
+    if (decoded.purpose !== 'password-reset' || typeof decoded.userId !== 'string' || typeof decoded.iat !== 'number') return null;
+    return { userId: decoded.userId, issuedAt: new Date(decoded.iat * 1000) };
+  } catch {
+    return null;
+  }
 }
 
 /**
