@@ -2,12 +2,21 @@ import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
+import path from 'path';
 import routes from './routes';
 
 // Load environment variables before anything else
 dotenv.config();
 
 const app = express();
+
+app.disable('x-powered-by');
+app.use((_req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('Referrer-Policy', 'same-origin');
+  next();
+});
 
 // ─── Core middleware ──────────────────────────────────────────────
 
@@ -83,6 +92,11 @@ app.get('/api/v1', (_req: Request, res: Response) => {
 // ─── API routes ───────────────────────────────────────────────────
 
 app.use('/api/v1', apiLimiter, routes);
+
+// Dedicated backend-owned administrator interface. It contains no privileged
+// data; every API operation still requires a valid ADMIN bearer token.
+const adminPanelPath = path.resolve(process.cwd(), 'admin');
+app.use('/admin-panel', express.static(adminPanelPath, { index: 'index.html', fallthrough: false }));
 
 // ─── 404 handler ──────────────────────────────────────────────────
 

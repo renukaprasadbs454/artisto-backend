@@ -66,6 +66,10 @@ export async function toggleSuspendUser(req: Request, res: Response, next: NextF
       res.status(404).json({ error: { code: 'NOT_FOUND', message: `User "${identifier}" not found` } });
       return;
     }
+    if (targetUser.id === req.user!.userId) {
+      res.status(400).json({ error: { code: 'ADMIN_SELF_ACTION_DENIED', message: 'Administrators cannot suspend their own account.' } });
+      return;
+    }
 
     const user = await prisma.user.update({
       where: { id: targetUser.id },
@@ -105,6 +109,10 @@ export async function updateUserRole(req: Request, res: Response, next: NextFunc
 
     if (!targetUser) {
       res.status(404).json({ error: { code: 'NOT_FOUND', message: `User "${identifier}" not found` } });
+      return;
+    }
+    if (targetUser.id === req.user!.userId) {
+      res.status(400).json({ error: { code: 'ADMIN_SELF_ACTION_DENIED', message: 'Administrators cannot change their own role.' } });
       return;
     }
 

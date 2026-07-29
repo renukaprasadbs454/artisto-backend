@@ -46,4 +46,5 @@ httpServer.listen(PORT, () => {
   console.log(`   REST API:  http://localhost:${PORT}/api/v1`);
   console.log(`   WebSocket: http://localhost:${PORT}`);
   console.log(`   Health:    http://localhost:${PORT}/health`);
+  console.log(`   Admin:     http://localhost:${PORT}/admin-panel`);
 });

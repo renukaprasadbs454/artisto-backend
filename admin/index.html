@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="referrer" content="same-origin" />
+  <title>Artisto Administration</title>
+  <link rel="stylesheet" href="/admin-panel/styles.css" />
+</head>
+<body data-theme="light">
+  <main class="shell">
+    <section id="login-view" class="card login-card">
+      <div class="login-brand"><div class="brand-mark">A</div><span>Artisto</span><span class="brand-divider">/</span><span class="brand-admin">Admin</span></div>
+      <p class="eyebrow">Restricted area</p><h1>Welcome back</h1>
+      <p class="muted">Sign in with an administrator account.</p>
+      <form id="login-form"><label>Email<input id="email" type="email" required autocomplete="username" /></label><label>Password<input id="password" type="password" required autocomplete="current-password" /></label><p id="login-error" class="error" role="alert"></p><button>Sign in securely</button></form>
+    </section>
+    <section id="dashboard-view" hidden>
+      <header><div class="header-title"><div class="brand-mark">A</div><div><p class="eyebrow">Restricted area</p><h1>Admin Command Center</h1><p id="admin-name" class="muted"></p></div></div><div class="header-actions"><button id="theme-toggle" class="icon-button" aria-label="Switch theme" title="Switch theme">☾</button><button id="logout" class="secondary">Sign out</button></div></header>
+      <p id="app-error" class="error" role="alert"></p>
+      <div id="stats" class="stats"></div>
+      <section class="card"><div class="section-heading"><div><h2>Users</h2><p class="muted">Suspension and role changes are enforced by the backend.</p></div><button id="refresh" class="secondary">Refresh</button></div><div class="table-wrap"><table><thead><tr><th>Username</th><th>Email</th><th>Role</th><th>Status</th><th>Actions</th></tr></thead><tbody id="users"></tbody></table></div></section>
+    </section>
+  </main>
+  <script src="/admin-panel/app.js" defer></script>
+</body>
+</html>

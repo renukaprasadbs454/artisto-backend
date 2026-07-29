@@ -291,7 +291,7 @@ export async function login(req: Request, res: Response, next: NextFunction): Pr
     });
 
     // Same error for "no such email" and "wrong password" — don't leak which one
-    if (!user || !(await comparePassword(password, user.passwordHash))) {
+    if (!user || user.suspended || !(await comparePassword(password, user.passwordHash))) {
       res.status(401).json({
         error: { code: 'INVALID_CREDENTIALS', message: 'Invalid email or password' },
       });

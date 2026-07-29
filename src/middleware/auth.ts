@@ -36,8 +36,13 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
     try {
       const dbUser = await prisma.user.findUnique({
         where: { id: payload.userId! },
-        select: { tokenInvalidBefore: true, role: true },
+        select: { tokenInvalidBefore: true, role: true, suspended: true },
       });
+
+      if (!dbUser || dbUser.suspended) {
+        res.status(403).json({ error: { code: 'ACCOUNT_SUSPENDED', message: 'This account is unavailable.' } });
+        return;
+      }
 
       const tokenInvalidBeforeRaw = dbUser?.tokenInvalidBefore;
       if (tokenInvalidBeforeRaw && payload.iat) {
