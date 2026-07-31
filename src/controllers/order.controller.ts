@@ -504,3 +504,39 @@ export async function grantMessagingPermission(req: Request, res: Response, next
     next(err);
   }
 }
+
+/**
+ * DELETE /orders/:id/revoke-messaging
+ * Recruiter revokes direct messaging access on an application.
+ * Deletes the conversation tied to the order so messaging is disabled for both parties.
+ */
+export async function revokeMessagingPermission(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const userId = req.user!.userId;
+    const id = req.params.id as string;
+
+    const order = await prisma.order.findUnique({ where: { id }, include: { conversation: { select: { id: true } } } });
+
+    if (!order) {
+      res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Application not found' } });
+      return;
+    }
+
+    if (order.sellerId !== userId) {
+      res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only the recruiter can revoke messaging access' } });
+      return;
+    }
+
+    if (!order.conversation) {
+      res.status(400).json({ error: { code: 'BAD_REQUEST', message: 'Messaging is not currently enabled for this application' } });
+      return;
+    }
+
+    // Delete the conversation (messages cascade via Prisma relation)
+    await prisma.conversation.delete({ where: { id: order.conversation.id } });
+
+    res.status(200).json({ data: { revoked: true } });
+  } catch (err) {
+    next(err);
+  }
+}

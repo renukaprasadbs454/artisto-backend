@@ -546,30 +546,5 @@ export const swaggerDocument = {
       },
     },
 
-    // ─── ADMIN ─────────────────────────────────────────────────────────────
-    '/admin/stats': {
-      get: {
-        tags: ['Admin'],
-        summary: 'Get platform-wide admin statistics (Admin only)',
-        security: [{ bearerAuth: [] }],
-        responses: {
-          '200': { description: 'Total users, listings, orders, and revenue' },
-          '403': { description: 'Forbidden — Admin role required' },
-        },
-      },
-    },
-    '/admin/users/{identifier}/suspend': {
-      patch: {
-        tags: ['Admin'],
-        summary: 'Suspend / unsuspend user by Username, Email, or UUID (Admin only)',
-        security: [{ bearerAuth: [] }],
-        parameters: [
-          { name: 'identifier', in: 'path', required: true, schema: { type: 'string' }, description: 'Username, Email, or UUID' },
-        ],
-        responses: {
-          '200': { description: 'User suspension status updated' },
-        },
-      },
-    },
   },
 };

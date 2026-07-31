@@ -11,6 +11,7 @@ import {
   getRecruiterApplications,
   approveApplication,
   grantMessagingPermission,
+  revokeMessagingPermission,
 } from '../controllers/order.controller';
 
 const router = Router();
@@ -30,6 +31,9 @@ router.post('/:id/approve-application', requireAuth, requireProfileComplete, app
 
 // POST /api/v1/orders/:id/grant-messaging — recruiter enables direct messaging on an approved app
 router.post('/:id/grant-messaging', requireAuth, requireProfileComplete, grantMessagingPermission);
+
+// DELETE /api/v1/orders/:id/revoke-messaging — recruiter revokes messaging access
+router.delete('/:id/revoke-messaging', requireAuth, requireProfileComplete, revokeMessagingPermission);
 
 // GET /api/v1/orders/:id — requires auth + participant
 router.get('/:id', requireAuth, requireProfileComplete, getOrder);

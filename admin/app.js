@@ -9,6 +9,27 @@
   };
   const showError = (message) => { $('app-error').textContent = message || ''; };
   const applyTheme = (theme) => { document.body.dataset.theme = theme; $('theme-toggle').textContent = theme === 'dark' ? '☀' : '☾'; localStorage.setItem('artisto-admin-theme', theme); };
+  const loginButton = $('login-submit');
+  const loginForm = $('login-form');
+  const loginEmail = $('email');
+  const loginPassword = $('password');
+  const passwordToggle = $('password-toggle');
+  const setPasswordVisibility = (visible) => {
+    loginPassword.type = visible ? 'text' : 'password';
+    passwordToggle.textContent = visible ? '🙈' : '👁';
+    passwordToggle.setAttribute('aria-label', visible ? 'Hide password' : 'Show password');
+    passwordToggle.setAttribute('aria-pressed', String(visible));
+    passwordToggle.setAttribute('title', visible ? 'Hide password' : 'Show password');
+  };
+  const setLoginLoading = (loading) => {
+    loginButton.disabled = loading;
+    loginButton.classList.toggle('is-loading', loading);
+    loginButton.textContent = loading ? 'Signing in…' : 'Sign in securely';
+    loginEmail.disabled = loading;
+    loginPassword.disabled = loading;
+    passwordToggle.disabled = loading;
+    loginForm.setAttribute('aria-busy', String(loading));
+  };
   const load = async (showFeedback = false) => {
     const refreshButton = $('refresh');
     try {
@@ -29,13 +50,20 @@
       refreshButton.textContent = 'Refresh';
     }
   };
-  $('login-form').addEventListener('submit', async (event) => {
+  passwordToggle.addEventListener('click', () => {
+    setPasswordVisibility(loginPassword.type === 'password');
+  });
+  setPasswordVisibility(false);
+  loginForm.addEventListener('submit', async (event) => {
     event.preventDefault(); $('login-error').textContent = '';
+    setLoginLoading(true);
     try {
-      const body = await fetch('/api/v1/auth/login', { method:'POST', headers:{'Content-Type':'application/json'}, credentials:'same-origin', body:JSON.stringify({email:$('email').value,password:$('password').value}) }).then(async r => ({ ok:r.ok, body:await r.json() }));
-      if (!body.ok || body.body.data?.user?.role !== 'ADMIN') throw new Error('Administrator access is required.');
-      token = body.body.data.accessToken; $('admin-name').textContent = `Signed in as ${body.body.data.user.username}`; $('login-view').hidden = true; $('dashboard-view').hidden = false; load();
+      const response = await fetch('/api/v1/auth/login', { method:'POST', headers:{'Content-Type':'application/json'}, credentials:'same-origin', body:JSON.stringify({email:loginEmail.value,password:loginPassword.value}) });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok || body.data?.user?.role !== 'ADMIN') throw new Error('Administrator access is required.');
+      token = body.data.accessToken; $('admin-name').textContent = `Signed in as ${body.data.user.username}`; $('login-view').hidden = true; $('dashboard-view').hidden = false; load();
     } catch (error) { $('login-error').textContent = error.message; }
+    finally { setLoginLoading(false); }
   });
   $('users').addEventListener('change', async (event) => { const id = event.target.dataset.role; if (!id || !confirm('Change this user role?')) return load(); try { await request(`/admin/users/${id}/role`, {method:'PATCH',body:JSON.stringify({role:event.target.value})}); load(); } catch(error) { showError(error.message); load(); } });
   $('users').addEventListener('click', async (event) => { const id = event.target.dataset.suspend; if (!id || !confirm('Change this user suspension status?')) return; const suspended = event.target.textContent === 'Suspend'; try { await request(`/admin/users/${id}/suspend`, {method:'PATCH',body:JSON.stringify({suspended})}); load(); } catch(error) { showError(error.message); } });
