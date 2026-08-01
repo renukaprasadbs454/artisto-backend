@@ -3,6 +3,9 @@ import { z } from 'zod';
 import { Prisma } from '@prisma/client';
 import { prisma } from '../utils/prisma';
 
+const pageDetailCache = new Map<string, { page: unknown; expiresAt: number }>();
+const PAGE_CACHE_TTL_MS = 60_000;
+
 // ─── Zod Schemas ────────────────────────────────────────────────────
 
 export const createPageSchema = z.object({
@@ -108,6 +111,7 @@ export async function getOpenings(req: Request, res: Response, next: NextFunctio
                   select: {
                     id: true,
                     username: true,
+                    isVerified: true,
                     profile: { select: { displayName: true, avatarUrl: true } },
                   },
                 },
@@ -153,6 +157,7 @@ export async function getPages(req: Request, res: Response, next: NextFunction):
           select: {
             id: true,
             username: true,
+            isVerified: true,
             profile: { select: { displayName: true, avatarUrl: true } },
           },
         },
@@ -203,6 +208,11 @@ export async function getMyPages(req: Request, res: Response, next: NextFunction
 export async function getPage(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const id = req.params.id as string;
+    const cached = pageDetailCache.get(id);
+    if (cached && cached.expiresAt > Date.now()) {
+      res.status(200).json({ data: cached.page });
+      return;
+    }
 
     const page = await prisma.recruiterPage.findUnique({
       where: { id },
@@ -211,6 +221,7 @@ export async function getPage(req: Request, res: Response, next: NextFunction): 
           select: {
             id: true,
             username: true,
+            isVerified: true,
             profile: { select: { displayName: true, avatarUrl: true } },
           },
         },
@@ -228,6 +239,7 @@ export async function getPage(req: Request, res: Response, next: NextFunction): 
       return;
     }
 
+    pageDetailCache.set(id, { page, expiresAt: Date.now() + PAGE_CACHE_TTL_MS });
     res.status(200).json({ data: page });
   } catch (err) {
     next(err);

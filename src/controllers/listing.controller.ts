@@ -78,6 +78,7 @@ export async function getListings(req: Request, res: Response, next: NextFunctio
           seller: {
             select: {
               id: true,
+              isVerified: true,
               profile: {
                 select: { displayName: true, avatarUrl: true },
               },
@@ -112,6 +113,7 @@ export async function getListing(req: Request, res: Response, next: NextFunction
           select: {
             id: true,
             role: true,
+            isVerified: true,
             profile: {
               select: { displayName: true, avatarUrl: true, headline: true, location: true },
             },

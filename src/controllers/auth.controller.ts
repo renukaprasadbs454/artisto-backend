@@ -283,7 +283,8 @@ export async function changePassword(req: Request, res: Response, next: NextFunc
  */
 export async function login(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const { email, password } = req.body;
+    const { password } = req.body;
+    const email = req.body.email.trim().toLowerCase();
 
     const user = await prisma.user.findUnique({
       where: { email },

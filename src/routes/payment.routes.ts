@@ -4,6 +4,7 @@ import { validate } from '../middleware/validate';
 import {
   createOrder,
   verifyOrder,
+  testVerifyAccount,
   createOrderSchema,
   verifyOrderSchema,
 } from '../controllers/payment.controller';
@@ -25,5 +26,7 @@ router.post(
   validate(verifyOrderSchema),
   verifyOrder
 );
+
+router.post('/test-verify', requireAuth, requireProfileComplete, testVerifyAccount);
 
 export default router;

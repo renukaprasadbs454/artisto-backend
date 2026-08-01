@@ -38,6 +38,8 @@ export async function getProfile(req: Request, res: Response, next: NextFunction
             username: true,
             email: true,
             role: true,
+            isVerified: true,
+            verifiedUntil: true,
             createdAt: true,
           },
         },

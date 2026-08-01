@@ -28,6 +28,7 @@ export async function getPosts(req: Request, res: Response, next: NextFunction):
             id: true,
             username: true,
             role: true,
+            isVerified: true,
             profile: {
               select: {
                 displayName: true,
@@ -89,6 +90,8 @@ export async function createPost(req: Request, res: Response, next: NextFunction
         author: {
           select: {
             id: true,
+            username: true,
+            isVerified: true,
             profile: {
               select: {
                 displayName: true,
@@ -168,6 +171,8 @@ export async function addComment(req: Request, res: Response, next: NextFunction
         user: {
           select: {
             id: true,
+            username: true,
+            isVerified: true,
             profile: {
               select: {
                 displayName: true,
@@ -200,6 +205,8 @@ export async function getComments(req: Request, res: Response, next: NextFunctio
         user: {
           select: {
             id: true,
+            username: true,
+            isVerified: true,
             profile: {
               select: {
                 displayName: true,

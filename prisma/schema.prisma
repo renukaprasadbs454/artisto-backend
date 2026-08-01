@@ -43,6 +43,8 @@ model User {
   role                Role     @default(BUYER)
   refreshTokenHash    String?
   emailVerified       Boolean  @default(false)
+  isVerified          Boolean  @default(false)
+  verifiedUntil       DateTime?
   suspended           Boolean  @default(false)
   artistNameChangedAt DateTime?
   tokenInvalidBefore  DateTime?
@@ -207,6 +209,7 @@ model ActorProfile {
   updatedAt          DateTime           @updatedAt
 
   filmCredits        FilmCredit[]
+  languages          ActorLanguage[]
 }
 
 model FilmCredit {
@@ -219,6 +222,19 @@ model FilmCredit {
   posterUrl      String?
   roleName       String
   createdAt      DateTime     @default(now())
+}
+
+model ActorLanguage {
+  id             String       @id @default(uuid())
+  actorProfileId String
+  actorProfile   ActorProfile @relation(fields: [actorProfileId], references: [id], onDelete: Cascade)
+  language       String
+  proficiency    Int
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([actorProfileId, language])
+  @@index([actorProfileId])
 }
 
 model Post {
@@ -259,6 +275,7 @@ model Subscription {
   userId               String
   user                 User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   status               SubscriptionStatus @default(PENDING)
+  plan                 String             @default("VERIFIED")
   razorpaySubscriptionId String?          @unique
   currentPeriodEnd     DateTime?
   createdAt            DateTime           @default(now())

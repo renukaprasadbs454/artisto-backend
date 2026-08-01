@@ -15,7 +15,7 @@ export const createOrderSchema = z.object({
   amount: z.number().positive().optional(),
   currency: z.string().length(3).default('INR'),
   paymentType: z.enum(['SUBSCRIPTION', 'ORDER_ESCROW']),
-  plan: z.enum(['PRO', 'AGENCY']).optional(),
+  plan: z.literal('VERIFIED').optional(),
   listingId: z.string().optional(),
   relatedId: z.string().optional(),
 }).strict();
@@ -25,7 +25,7 @@ export const verifyOrderSchema = z.object({
   razorpay_payment_id: z.string(),
   razorpay_signature: z.string(),
   paymentId: z.string(),
-  plan: z.string().optional(), // PRO, AGENCY
+  plan: z.literal('VERIFIED').optional(),
 }).strict();
 
 /**
@@ -37,10 +37,9 @@ export async function createOrder(req: Request, res: Response, next: NextFunctio
     const userId = req.user!.userId;
     const { currency, paymentType, plan, listingId, amount } = req.body;
 
-    let targetAmount = amount || 999;
+    let targetAmount = amount || 699;
     if (paymentType === 'SUBSCRIPTION') {
-      if (plan === 'AGENCY') targetAmount = 4999;
-      else targetAmount = 999;
+      targetAmount = 699;
     } else if (listingId) {
       const listing = await prisma.listing.findUnique({ where: { id: listingId } });
       if (listing) {
@@ -95,7 +94,7 @@ export async function createOrder(req: Request, res: Response, next: NextFunctio
 export async function verifyOrder(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const userId = req.user!.userId;
-    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, paymentId, plan } = req.body;
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, paymentId } = req.body;
 
     const existingPayment = await prisma.payment.findUnique({ where: { id: paymentId } });
     if (!existingPayment) {
@@ -139,27 +138,60 @@ export async function verifyOrder(req: Request, res: Response, next: NextFunctio
       return;
     }
 
-    // Payment is valid
-    const payment = await prisma.payment.update({
-      where: { id: paymentId },
-      data: { 
-        status: 'CAPTURED',
-        razorpayPaymentId: razorpay_payment_id
-      },
-    });
-
     const expiresAt = new Date();
     expiresAt.setMonth(expiresAt.getMonth() + 1);
 
-    await prisma.subscription.create({
-      data: {
-        userId,
-        status: 'ACTIVE',
-        currentPeriodEnd: expiresAt,
-      },
+    // Keep the captured payment, active subscription, and badge grant in one
+    // transaction so an account can never be charged without being verified.
+    const payment = await prisma.$transaction(async (tx) => {
+      const subscription = await tx.subscription.create({
+        data: {
+          userId,
+          plan: 'VERIFIED',
+          status: 'ACTIVE',
+          currentPeriodEnd: expiresAt,
+        },
+      });
+
+      const capturedPayment = await tx.payment.update({
+        where: { id: paymentId },
+        data: {
+          status: 'CAPTURED',
+          razorpayPaymentId: razorpay_payment_id,
+          subscriptionId: subscription.id,
+        },
+      });
+
+      await tx.user.update({
+        where: { id: userId },
+        data: { isVerified: true, verifiedUntil: expiresAt },
+      });
+
+      return capturedPayment;
     });
 
     res.status(200).json({ data: { success: true, payment } });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/** Development-only helper for testing verified UI before Razorpay is configured. */
+export async function testVerifyAccount(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    if (process.env.NODE_ENV === 'production') {
+      res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Not found' } });
+      return;
+    }
+
+    const userId = req.user!.userId;
+    const expiresAt = new Date();
+    expiresAt.setMonth(expiresAt.getMonth() + 1);
+    await prisma.$transaction([
+      prisma.subscription.create({ data: { userId, plan: 'VERIFIED', status: 'ACTIVE', currentPeriodEnd: expiresAt } }),
+      prisma.user.update({ where: { id: userId }, data: { isVerified: true, verifiedUntil: expiresAt } }),
+    ]);
+    res.status(200).json({ data: { success: true, verifiedUntil: expiresAt } });
   } catch (err) {
     next(err);
   }

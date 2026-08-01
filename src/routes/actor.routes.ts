@@ -8,8 +8,11 @@ import {
   upsertActorProfile,
   addFilmCredit,
   deleteFilmCredit,
+  upsertActorLanguage,
+  deleteActorLanguage,
   upsertActorProfileSchema,
   addFilmCreditSchema,
+  upsertActorLanguageSchema,
 } from '../controllers/actor.controller';
 
 const router = Router();
@@ -48,5 +51,8 @@ router.delete(
   requireProfileComplete,
   deleteFilmCredit
 );
+
+router.post('/me/languages', requireAuth, requireProfileComplete, validate(upsertActorLanguageSchema), upsertActorLanguage);
+router.delete('/me/languages/:languageId', requireAuth, requireProfileComplete, deleteActorLanguage);
 
 export default router;

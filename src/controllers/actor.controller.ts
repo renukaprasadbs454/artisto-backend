@@ -15,6 +15,11 @@ export const addFilmCreditSchema = z.object({
   roleName: z.string().min(1),
 }).strict();
 
+export const upsertActorLanguageSchema = z.object({
+  language: z.string().trim().min(2).max(50),
+  proficiency: z.number().int().min(1).max(5),
+}).strict();
+
 /**
  * GET /actor
  * List all actor profiles with pagination and search. Public.
@@ -63,6 +68,7 @@ export async function getActors(req: Request, res: Response, next: NextFunction)
             select: {
               id: true,
               username: true,
+              isVerified: true,
               profile: {
                 select: {
                   displayName: true,
@@ -78,6 +84,7 @@ export async function getActors(req: Request, res: Response, next: NextFunction)
             take: 3, // Just include top 3 for discovery preview
             orderBy: { releaseYear: 'desc' },
           },
+          languages: { orderBy: [{ proficiency: 'desc' }, { language: 'asc' }] },
         },
       }),
     ]);
@@ -105,10 +112,12 @@ export async function getActorProfile(req: Request, res: Response, next: NextFun
         filmCredits: {
           orderBy: { releaseYear: 'desc' },
         },
+        languages: { orderBy: [{ proficiency: 'desc' }, { language: 'asc' }] },
         user: {
           select: {
             id: true,
             username: true,
+            isVerified: true,
             profile: {
               select: {
                 displayName: true,
@@ -157,10 +166,12 @@ export async function upsertActorProfile(req: Request, res: Response, next: Next
         filmCredits: {
           orderBy: { releaseYear: 'desc' },
         },
+        languages: { orderBy: [{ proficiency: 'desc' }, { language: 'asc' }] },
         user: {
           select: {
             id: true,
             username: true,
+            isVerified: true,
             profile: {
               select: { displayName: true, avatarUrl: true, bannerUrl: true, headline: true, location: true, bio: true, skills: true },
             },
@@ -232,6 +243,46 @@ export async function deleteFilmCredit(req: Request, res: Response, next: NextFu
   }
 }
 
+/** POST /actor/me/languages — add a language or update its proficiency. */
+export async function upsertActorLanguage(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const actorProfile = await prisma.actorProfile.findUnique({ where: { userId: req.user!.userId } });
+    if (!actorProfile) {
+      res.status(404).json({ error: { code: 'NOT_FOUND', message: 'You must create an actor profile first' } });
+      return;
+    }
+
+    const language = req.body.language.trim();
+    const savedLanguage = await prisma.actorLanguage.upsert({
+      where: { actorProfileId_language: { actorProfileId: actorProfile.id, language } },
+      create: { actorProfileId: actorProfile.id, language, proficiency: req.body.proficiency },
+      update: { proficiency: req.body.proficiency },
+    });
+
+    res.status(200).json({ data: savedLanguage });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/** DELETE /actor/me/languages/:languageId */
+export async function deleteActorLanguage(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const actorProfile = await prisma.actorProfile.findUnique({ where: { userId: req.user!.userId } });
+    const languageId = req.params.languageId as string;
+    const language = actorProfile ? await prisma.actorLanguage.findUnique({ where: { id: languageId } }) : null;
+    if (!actorProfile || !language || language.actorProfileId !== actorProfile.id) {
+      res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Language not found' } });
+      return;
+    }
+
+    await prisma.actorLanguage.delete({ where: { id: languageId } });
+    res.status(200).json({ data: { success: true } });
+  } catch (err) {
+    next(err);
+  }
+}
+
 /**
  * GET /actor/u/:username
  * Get actor profile by username. Public.
@@ -258,11 +309,13 @@ export async function getActorProfileByUsername(req: Request, res: Response, nex
         filmCredits: {
           orderBy: { releaseYear: 'desc' },
         },
+        languages: { orderBy: [{ proficiency: 'desc' }, { language: 'asc' }] },
         user: {
           select: {
             id: true,
             username: true,
             role: true,
+            isVerified: true,
             profile: {
               select: {
                 displayName: true,
