@@ -12,3 +12,5 @@ declare namespace Express {
     };
   }
 }
+
+export {};
