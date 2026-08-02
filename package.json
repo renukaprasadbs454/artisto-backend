@@ -10,6 +10,7 @@
     "test": "vitest",
     "prisma:generate": "npx prisma generate",
     "prisma:migrate": "npx prisma migrate dev",
+    "migrate:prod": "npx prisma migrate deploy",
     "prisma:studio": "npx prisma studio",
     "prisma:seed": "npx prisma db seed",
     "create-admin": "ts-node ./scripts/create-admin.ts"
