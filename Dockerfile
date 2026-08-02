@@ -25,4 +25,9 @@ COPY --from=build /app/dist ./dist
 ENV NODE_ENV=production
 EXPOSE 4000
 
-CMD ["node", "dist/server.js"]
+# Copy startup script and make it executable
+COPY docker-entrypoint.sh ./docker-entrypoint.sh
+RUN chmod +x ./docker-entrypoint.sh
+
+# Entrypoint runs migrations (if DATABASE_URL is set) and starts the server
+ENTRYPOINT ["./docker-entrypoint.sh"]
