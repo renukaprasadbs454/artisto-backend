@@ -1,4 +1,15 @@
-/// <reference path="../types/custom-express.d.ts" />
+/* eslint-disable @typescript-eslint/no-namespace */
+
+declare global {
+  namespace Express {
+    interface Request {
+      user?: {
+        userId: string;
+        role: string;
+      };
+    }
+  }
+}
 
 import http from 'http';
 import { Server } from 'socket.io';
