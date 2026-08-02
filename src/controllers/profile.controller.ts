@@ -17,6 +17,12 @@ export const updateProfileSchema = z.object({
   location: z.string().max(100).optional(),
   skills: z.array(z.string()).max(20).optional(),
   bannerUrl: z.string().optional(),
+  instagramUrl: z.string().url().or(z.string().length(0)).optional(),
+  workUrl: z.string().url().or(z.string().length(0)).optional(),
+  auditionUrl: z.string().url().or(z.string().length(0)).optional(),
+  height: z.string().max(30).optional(),
+  nativePlace: z.string().max(100).optional(),
+  phoneNumber: z.string().max(30).optional(),
 }).strict(); // Reject unknown fields — belt and suspenders
 
 // ─── Controllers ────────────────────────────────────────────────────
