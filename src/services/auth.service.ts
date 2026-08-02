@@ -137,10 +137,12 @@ export async function verifyRefreshToken(rawToken: string, storedHash: string): 
  * Set the refresh token as an httpOnly secure cookie on the response.
  */
 export function setRefreshCookie(res: Response, cookieValue: string): void {
+  const isProduction = process.env.NODE_ENV === 'production';
+  const sameSite = (process.env.REFRESH_COOKIE_SAMESITE || (isProduction ? 'none' : 'lax')) as 'lax' | 'strict' | 'none';
   res.cookie('refreshToken', cookieValue, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
+    secure: isProduction,
+    sameSite,
     maxAge: REFRESH_TOKEN_EXPIRY_MS,
     path: '/',
   });
@@ -150,10 +152,12 @@ export function setRefreshCookie(res: Response, cookieValue: string): void {
  * Clear the refresh token cookie.
  */
 export function clearRefreshCookie(res: Response): void {
+  const isProduction = process.env.NODE_ENV === 'production';
+  const sameSite = (process.env.REFRESH_COOKIE_SAMESITE || (isProduction ? 'none' : 'lax')) as 'lax' | 'strict' | 'none';
   res.clearCookie('refreshToken', {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
+    secure: isProduction,
+    sameSite,
     path: '/',
   });
 }
