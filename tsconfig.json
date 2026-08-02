@@ -12,10 +12,8 @@
     "resolveJsonModule": true,
     "declaration": true,
     "declarationMap": true,
-    "sourceMap": true,
-    "typeRoots": ["./node_modules/@types", "./types"]
+    "sourceMap": true
   },
-  "files": ["types/custom-express.d.ts"],
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]
 }
