@@ -179,7 +179,7 @@ export async function verifyOrder(req: Request, res: Response, next: NextFunctio
 /** Development-only helper for testing verified UI before Razorpay is configured. */
 export async function testVerifyAccount(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    if (process.env.NODE_ENV === 'production') {
+    if (process.env.NODE_ENV === 'production' && process.env.ALLOW_TEST_VERIFICATION !== 'true') {
       res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Not found' } });
       return;
     }
