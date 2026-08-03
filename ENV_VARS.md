@@ -50,7 +50,7 @@ Running Prisma migrations on Render
   - Run migrations from Render Shell:
     ```bash
     cd backend
-    npx prisma migrate deploy
+    npm run migrate:prod
     npx prisma db seed   # optional
     ```
   - Or allow the Start command to run `npm run migrate:prod` before starting the server (we recommend manual run first to inspect output).
