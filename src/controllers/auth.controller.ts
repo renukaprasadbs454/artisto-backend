@@ -20,7 +20,6 @@ import { Prisma } from '@prisma/client';
 // ─── Validation Schemas ─────────────────────────────────────────────
 
 export const registerSchema = z.object({
-  username: z.string().min(3, 'Username must be at least 3 characters').max(30).regex(/^[a-zA-Z0-9_-]+$/, 'Username can only contain letters, numbers, underscores, and hyphens'),
   email: z.string().email('Invalid email address'),
   password: z.string()
     .min(8, 'Password must be at least 8 characters')
@@ -28,7 +27,6 @@ export const registerSchema = z.object({
     .regex(/(?=.*[A-Z])/, 'Password must contain at least one uppercase letter')
     .regex(/(?=.*\d)/, 'Password must contain at least one number')
     .regex(/(?=.*[^A-Za-z0-9])/, 'Password must contain at least one special character'),
-  displayName: z.string().min(1, 'Display name is required').max(100),
   role: z.enum(['BUYER', 'SELLER']).optional().default('SELLER'), // Default to SELLER (Creator)
 });
 
@@ -72,17 +70,11 @@ export async function register(req: Request, res: Response, next: NextFunction):
       return;
     }
 
-    const { username, email, password, displayName, role } = parsed.data;
+    const { email, password, role } = parsed.data;
+    const displayName = email.split('@')[0];
+    const username = `user_${crypto.randomUUID().replace(/-/g, '').slice(0, 16)}`;
 
-    // Check email or username uniqueness
-    const existing = await prisma.user.findFirst({ 
-      where: { 
-        OR: [
-          { email },
-          { username }
-        ]
-      } 
-    });
+    const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) {
       res.status(409).json({
         error: { code: 'CONFLICT', message: 'Email or username is already registered' },

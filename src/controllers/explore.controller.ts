@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { Prisma } from '@prisma/client';
 import { prisma } from '../utils/prisma';
 
-export const upsertActorProfileSchema = z.object({
+export const upsertExploreProfileSchema = z.object({
   availabilityStatus: z.enum(['AVAILABLE', 'BUSY', 'NOT_LOOKING']).optional(),
 }).strict();
 
@@ -15,16 +15,16 @@ export const addFilmCreditSchema = z.object({
   roleName: z.string().min(1),
 }).strict();
 
-export const upsertActorLanguageSchema = z.object({
+export const upsertExploreLanguageSchema = z.object({
   language: z.string().trim().min(2).max(50),
   proficiency: z.number().int().min(1).max(5),
 }).strict();
 
 /**
- * GET /actor
- * List all actor profiles with pagination and search. Public.
+ * GET /explore
+ * List all explore profiles with pagination and search. Public.
  */
-export async function getActors(req: Request, res: Response, next: NextFunction): Promise<void> {
+export async function getExplores(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const page = Math.max(1, parseInt(req.query.page as string) || 1);
     const limit = Math.min(50, Math.max(1, parseInt(req.query.limit as string) || 20));
@@ -34,7 +34,7 @@ export async function getActors(req: Request, res: Response, next: NextFunction)
 
     const availability = req.query.availability as string;
 
-    const where: Prisma.ActorProfileWhereInput = {};
+    const where: Prisma.ExploreProfileWhereInput = {};
     if (search || location) {
       const profileFilter: any = {};
       
@@ -56,9 +56,9 @@ export async function getActors(req: Request, res: Response, next: NextFunction)
       where.availabilityStatus = availability as any;
     }
 
-    const [total, actors] = await Promise.all([
-      prisma.actorProfile.count({ where }),
-      prisma.actorProfile.findMany({
+    const [total, explores] = await Promise.all([
+      prisma.exploreProfile.count({ where }),
+      prisma.exploreProfile.findMany({
         where,
         skip,
         take: limit,
@@ -90,7 +90,7 @@ export async function getActors(req: Request, res: Response, next: NextFunction)
     ]);
 
     res.status(200).json({
-      data: actors,
+      data: explores,
       meta: { page, limit, total },
     });
   } catch (err) {
@@ -99,14 +99,14 @@ export async function getActors(req: Request, res: Response, next: NextFunction)
 }
 
 /**
- * GET /actor/:userId
- * Get actor profile with film credits. Public.
+ * GET /explore/:userId
+ * Get explore profile with film credits. Public.
  */
-export async function getActorProfile(req: Request, res: Response, next: NextFunction): Promise<void> {
+export async function getExploreProfile(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const userId = req.params.userId as string;
 
-    const actorProfile = await prisma.actorProfile.findUnique({
+    const exploreProfile = await prisma.exploreProfile.findUnique({
       where: { userId },
       include: {
         filmCredits: {
@@ -133,27 +133,27 @@ export async function getActorProfile(req: Request, res: Response, next: NextFun
       },
     });
 
-    if (!actorProfile) {
-      res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Actor profile not found' } });
+    if (!exploreProfile) {
+      res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Explore profile not found' } });
       return;
     }
 
-    res.status(200).json({ data: actorProfile });
+    res.status(200).json({ data: exploreProfile });
   } catch (err) {
     next(err);
   }
 }
 
 /**
- * POST /actor/me
- * Upsert actor profile.
+ * POST /explore/me
+ * Upsert explore profile.
  */
-export async function upsertActorProfile(req: Request, res: Response, next: NextFunction): Promise<void> {
+export async function upsertExploreProfile(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const userId = req.user!.userId;
     const { availabilityStatus } = req.body;
 
-    const actorProfile = await prisma.actorProfile.upsert({
+    const exploreProfile = await prisma.exploreProfile.upsert({
       where: { userId },
       create: {
         userId,
@@ -180,30 +180,30 @@ export async function upsertActorProfile(req: Request, res: Response, next: Next
       },
     });
 
-    res.status(200).json({ data: actorProfile });
+    res.status(200).json({ data: exploreProfile });
   } catch (err) {
     next(err);
   }
 }
 
 /**
- * POST /actor/me/credits
- * Add a film credit to current user's actor profile.
+ * POST /explore/me/credits
+ * Add a film credit to current user's explore profile.
  */
 export async function addFilmCredit(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const userId = req.user!.userId;
     const data = req.body;
 
-    const actorProfile = await prisma.actorProfile.findUnique({ where: { userId } });
-    if (!actorProfile) {
-      res.status(404).json({ error: { code: 'NOT_FOUND', message: 'You must create an actor profile first' } });
+    const exploreProfile = await prisma.exploreProfile.findUnique({ where: { userId } });
+    if (!exploreProfile) {
+      res.status(404).json({ error: { code: 'NOT_FOUND', message: 'You must create an explore profile first' } });
       return;
     }
 
     const credit = await prisma.filmCredit.create({
       data: {
-        actorProfileId: actorProfile.id,
+        exploreProfileId: exploreProfile.id,
         ...data,
       },
     });
@@ -215,7 +215,7 @@ export async function addFilmCredit(req: Request, res: Response, next: NextFunct
 }
 
 /**
- * DELETE /actor/me/credits/:creditId
+ * DELETE /explore/me/credits/:creditId
  * Delete a film credit.
  */
 export async function deleteFilmCredit(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -223,14 +223,14 @@ export async function deleteFilmCredit(req: Request, res: Response, next: NextFu
     const userId = req.user!.userId;
     const creditId = req.params.creditId as string;
 
-    const actorProfile = await prisma.actorProfile.findUnique({ where: { userId } });
-    if (!actorProfile) {
-      res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Actor profile not found' } });
+    const exploreProfile = await prisma.exploreProfile.findUnique({ where: { userId } });
+    if (!exploreProfile) {
+      res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Explore profile not found' } });
       return;
     }
 
     const credit = await prisma.filmCredit.findUnique({ where: { id: creditId } });
-    if (!credit || credit.actorProfileId !== actorProfile.id) {
+    if (!credit || credit.exploreProfileId !== exploreProfile.id) {
       res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Film credit not found' } });
       return;
     }
@@ -243,19 +243,19 @@ export async function deleteFilmCredit(req: Request, res: Response, next: NextFu
   }
 }
 
-/** POST /actor/me/languages — add a language or update its proficiency. */
-export async function upsertActorLanguage(req: Request, res: Response, next: NextFunction): Promise<void> {
+/** POST /explore/me/languages — add a language or update its proficiency. */
+export async function upsertExploreLanguage(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const actorProfile = await prisma.actorProfile.findUnique({ where: { userId: req.user!.userId } });
-    if (!actorProfile) {
-      res.status(404).json({ error: { code: 'NOT_FOUND', message: 'You must create an actor profile first' } });
+    const exploreProfile = await prisma.exploreProfile.findUnique({ where: { userId: req.user!.userId } });
+    if (!exploreProfile) {
+      res.status(404).json({ error: { code: 'NOT_FOUND', message: 'You must create an explore profile first' } });
       return;
     }
 
     const language = req.body.language.trim();
-    const savedLanguage = await prisma.actorLanguage.upsert({
-      where: { actorProfileId_language: { actorProfileId: actorProfile.id, language } },
-      create: { actorProfileId: actorProfile.id, language, proficiency: req.body.proficiency },
+    const savedLanguage = await prisma.exploreLanguage.upsert({
+      where: { exploreProfileId_language: { exploreProfileId: exploreProfile.id, language } },
+      create: { exploreProfileId: exploreProfile.id, language, proficiency: req.body.proficiency },
       update: { proficiency: req.body.proficiency },
     });
 
@@ -265,18 +265,18 @@ export async function upsertActorLanguage(req: Request, res: Response, next: Nex
   }
 }
 
-/** DELETE /actor/me/languages/:languageId */
-export async function deleteActorLanguage(req: Request, res: Response, next: NextFunction): Promise<void> {
+/** DELETE /explore/me/languages/:languageId */
+export async function deleteExploreLanguage(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const actorProfile = await prisma.actorProfile.findUnique({ where: { userId: req.user!.userId } });
+    const exploreProfile = await prisma.exploreProfile.findUnique({ where: { userId: req.user!.userId } });
     const languageId = req.params.languageId as string;
-    const language = actorProfile ? await prisma.actorLanguage.findUnique({ where: { id: languageId } }) : null;
-    if (!actorProfile || !language || language.actorProfileId !== actorProfile.id) {
+    const language = exploreProfile ? await prisma.exploreLanguage.findUnique({ where: { id: languageId } }) : null;
+    if (!exploreProfile || !language || language.exploreProfileId !== exploreProfile.id) {
       res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Language not found' } });
       return;
     }
 
-    await prisma.actorLanguage.delete({ where: { id: languageId } });
+    await prisma.exploreLanguage.delete({ where: { id: languageId } });
     res.status(200).json({ data: { success: true } });
   } catch (err) {
     next(err);
@@ -284,10 +284,10 @@ export async function deleteActorLanguage(req: Request, res: Response, next: Nex
 }
 
 /**
- * GET /actor/u/:username
- * Get actor profile by username. Public.
+ * GET /explore/u/:username
+ * Get explore profile by username. Public.
  */
-export async function getActorProfileByUsername(req: Request, res: Response, next: NextFunction): Promise<void> {
+export async function getExploreProfileByUsername(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const username = req.params.username as string;
 
@@ -298,7 +298,7 @@ export async function getActorProfileByUsername(req: Request, res: Response, nex
       }
     });
 
-    // Preserve public actor links after a username change.
+    // Preserve public explore links after a username change.
     if (!user) {
       const previous = await prisma.previousUsername.findFirst({
         where: { username: { equals: username, mode: 'insensitive' } },
@@ -312,7 +312,7 @@ export async function getActorProfileByUsername(req: Request, res: Response, nex
       return;
     }
 
-    const actorProfile = await prisma.actorProfile.findUnique({
+    const exploreProfile = await prisma.exploreProfile.findUnique({
       where: { userId: user.id },
       include: {
         filmCredits: {
@@ -341,12 +341,12 @@ export async function getActorProfileByUsername(req: Request, res: Response, nex
       },
     });
 
-    if (!actorProfile) {
-      res.status(404).json({ error: { message: 'Actor profile not found' } });
+    if (!exploreProfile) {
+      res.status(404).json({ error: { message: 'Explore profile not found' } });
       return;
     }
 
-    res.status(200).json({ data: actorProfile });
+    res.status(200).json({ data: exploreProfile });
   } catch (err) {
     next(err);
   }

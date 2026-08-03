@@ -61,7 +61,7 @@ model User {
   conversationsA Conversation[]  @relation("ParticipantOne")
   conversationsB Conversation[]  @relation("ParticipantTwo")
   workExperiences WorkExperience[]
-  actorProfile    ActorProfile?
+  exploreProfile    ExploreProfile?
   posts           Post[]         @relation("PostAuthor")
   postLikes       PostLike[]
   postComments    PostComment[]
@@ -208,7 +208,7 @@ model WorkExperience {
   createdAt    DateTime  @default(now())
 }
 
-model ActorProfile {
+model ExploreProfile {
   id                 String             @id @default(uuid())
   userId             String             @unique
   user               User               @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -217,13 +217,13 @@ model ActorProfile {
   updatedAt          DateTime           @updatedAt
 
   filmCredits        FilmCredit[]
-  languages          ActorLanguage[]
+  languages          ExploreLanguage[]
 }
 
 model FilmCredit {
   id             String       @id @default(uuid())
-  actorProfileId String
-  actorProfile   ActorProfile @relation(fields: [actorProfileId], references: [id], onDelete: Cascade)
+  exploreProfileId String
+  exploreProfile   ExploreProfile @relation(fields: [exploreProfileId], references: [id], onDelete: Cascade)
   tmdbMovieId    Int
   title          String
   releaseYear    Int?
@@ -232,17 +232,17 @@ model FilmCredit {
   createdAt      DateTime     @default(now())
 }
 
-model ActorLanguage {
+model ExploreLanguage {
   id             String       @id @default(uuid())
-  actorProfileId String
-  actorProfile   ActorProfile @relation(fields: [actorProfileId], references: [id], onDelete: Cascade)
+  exploreProfileId String
+  exploreProfile   ExploreProfile @relation(fields: [exploreProfileId], references: [id], onDelete: Cascade)
   language       String
   proficiency    Int
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 
-  @@unique([actorProfileId, language])
-  @@index([actorProfileId])
+  @@unique([exploreProfileId, language])
+  @@index([exploreProfileId])
 }
 
 model Post {
@@ -369,6 +369,10 @@ model CompanyProfile {
   updatedAt       DateTime @updatedAt
 
   openings CompanyOpening[]
+
+  bannerUrl String?
+  avatarUrl String?
+
   @@index([ownerId])
 }
 
@@ -380,6 +384,9 @@ model CompanyOpening {
   location           String?
   schedule           String?
   duration           String?
+  startTime          DateTime?
+  endTime            DateTime?
+  genderPreference   String?
   workType           String?
   salary             String?
   description        String
