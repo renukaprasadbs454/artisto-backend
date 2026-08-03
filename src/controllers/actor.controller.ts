@@ -291,12 +291,21 @@ export async function getActorProfileByUsername(req: Request, res: Response, nex
   try {
     const username = req.params.username as string;
 
-    const user = await prisma.user.findUnique({
+    let user = await prisma.user.findUnique({
       where: { username },
       select: {
         id: true,
       }
     });
+
+    // Preserve public actor links after a username change.
+    if (!user) {
+      const previous = await prisma.previousUsername.findFirst({
+        where: { username: { equals: username, mode: 'insensitive' } },
+        select: { userId: true },
+      });
+      if (previous) user = await prisma.user.findUnique({ where: { id: previous.userId }, select: { id: true } });
+    }
 
     if (!user) {
       res.status(404).json({ error: { message: 'User not found' } });
@@ -320,6 +329,7 @@ export async function getActorProfileByUsername(req: Request, res: Response, nex
               select: {
                 displayName: true,
                 avatarUrl: true,
+                bannerUrl: true,
                 headline: true,
                 bio: true,
                 location: true,

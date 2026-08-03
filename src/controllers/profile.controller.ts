@@ -212,11 +212,12 @@ export async function getProfileByUsername(req: Request, res: Response, next: Ne
       // If not found, check previous usernames to see if this username was changed
       const prev = await prisma.previousUsername.findFirst({ where: { username: { equals: username, mode: 'insensitive' } } });
       if (prev) {
-        // fetch current username for that user and redirect
-        const current = await prisma.user.findUnique({ where: { id: prev.userId } });
-        if (current) {
-          const redirectUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/u/${encodeURIComponent(current.username)}`;
-          res.redirect(301, redirectUrl);
+        // Return data rather than redirecting an API request to the frontend.
+        // The client can then replace the old URL with the current public handle.
+        const current = await prisma.user.findUnique({ where: { id: prev.userId }, include: { profile: true } });
+        if (current?.profile) {
+          const { passwordHash: _, refreshTokenHash: __, profile: currentProfile, ...safeUser } = current;
+          res.status(200).json({ data: { ...currentProfile, user: safeUser }, canonicalUsername: current.username });
           return;
         }
       }
