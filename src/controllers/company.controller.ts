@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import { prisma } from '../utils/prisma';
-import { storageService } from '../services/storage.service';
+import { uploadToStorage, deleteFromStorage } from '../services/storage.service';
 
 const link = z.string().url().or(z.literal('')).optional();
 export const companySchema = z.object({ name: z.string().trim().min(2).max(100), username: z.string().trim().toLowerCase().regex(/^[a-z0-9_-]{3,30}$/), description: z.string().max(3000).optional(), location: z.string().max(120).optional(), deliveryDetails: z.string().max(1000).optional(), websiteUrl: link, instagramUrl: link, portfolioUrl: link, services: z.array(z.object({ title: z.string().min(2).max(100), price: z.coerce.number().positive(), unit: z.string().max(30), description: z.string().max(500).optional() })).max(30).optional(), projects: z.array(z.object({ title: z.string().min(2).max(150), workUrl: link, description: z.string().max(1000).optional() })).max(50).optional() });
@@ -49,8 +49,9 @@ export async function uploadBanner(req: Request, res: Response, next: NextFuncti
       res.status(400).json({ error: { code: 'BAD_REQUEST', message: 'No banner image uploaded' } });
       return;
     }
-    const bannerUrl = await storageService.uploadFile(req.file, `company-banners/${req.params.id}`);
-    await prisma.companyProfile.update({ where: { id: req.params.id }, data: { bannerUrl } });
+    const uploaded = await uploadToStorage(req.file, `company-banners/${req.params.id}`);
+    const bannerUrl = String((uploaded as any).url);
+    await prisma.companyProfile.update({ where: { id: String(req.params.id) }, data: { bannerUrl } as any });
     res.json({ data: { bannerUrl } });
   } catch (e) {
     next(e);
@@ -68,8 +69,9 @@ export async function uploadAvatar(req: Request, res: Response, next: NextFuncti
       res.status(400).json({ error: { code: 'BAD_REQUEST', message: 'No avatar image uploaded' } });
       return;
     }
-    const avatarUrl = await storageService.uploadFile(req.file, `company-avatars/${req.params.id}`);
-    await prisma.companyProfile.update({ where: { id: req.params.id }, data: { avatarUrl } });
+    const uploaded = await uploadToStorage(req.file, `company-avatars/${req.params.id}`);
+    const avatarUrl = String((uploaded as any).url);
+    await prisma.companyProfile.update({ where: { id: String(req.params.id) }, data: { avatarUrl } as any });
     res.json({ data: { avatarUrl } });
   } catch (e) {
     next(e);

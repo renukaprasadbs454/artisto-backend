@@ -96,7 +96,7 @@ export async function register(req: Request, res: Response, next: NextFunction):
           profile: {
             create: { displayName },
           },
-          actorProfile: {
+          exploreProfile: {
             create: { availabilityStatus: 'AVAILABLE' }
           }
         },

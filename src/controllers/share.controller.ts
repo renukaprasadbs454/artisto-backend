@@ -93,11 +93,11 @@ export async function shareActorProfile(req: Request, res: Response, next: NextF
       where: { username },
       include: {
         profile: true,
-        actorProfile: true
+        exploreProfile: true
       }
     });
 
-    if (!user?.profile || !user?.actorProfile) {
+    if (!user?.profile || !user?.exploreProfile) {
       res.status(404).send('Actor profile not found');
       return;
     }

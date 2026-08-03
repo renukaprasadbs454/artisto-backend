@@ -291,7 +291,7 @@ export async function getTableRecords(req: Request, res: Response, next: NextFun
         });
         break;
       case 'actor_profiles':
-        data = await prisma.actorProfile.findMany({
+        data = await (prisma as any).exploreProfile.findMany({
           take: 100,
           include: {
             user: { select: { username: true, email: true } },
@@ -370,7 +370,7 @@ export async function deleteTableRecord(req: Request, res: Response, next: NextF
           prisma.media.deleteMany({ where: { ownerId: id } }),
           prisma.portfolioItem.deleteMany({ where: { userId: id } }),
           prisma.workExperience.deleteMany({ where: { userId: id } }),
-          prisma.actorProfile.deleteMany({ where: { userId: id } }),
+          (prisma as any).exploreProfile.deleteMany({ where: { userId: id } }),
           prisma.profile.deleteMany({ where: { userId: id } }),
           prisma.user.delete({ where: { id } }),
         ]);
@@ -379,7 +379,7 @@ export async function deleteTableRecord(req: Request, res: Response, next: NextF
         await prisma.profile.delete({ where: { id } });
         break;
       case 'actor_profiles':
-        await prisma.actorProfile.delete({ where: { id } });
+        await (prisma as any).exploreProfile.delete({ where: { id } });
         break;
       case 'listings':
         await prisma.$transaction([
