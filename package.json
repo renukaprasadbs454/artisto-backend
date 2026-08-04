@@ -10,7 +10,7 @@
     "test": "vitest",
     "prisma:generate": "npx prisma generate",
     "prisma:migrate": "npx prisma migrate dev",
-    "migrate:prod": "npx prisma db execute --file prisma/migrations/20260804_rename-actor-tables-to-explore/migration.sql && npx prisma db push --skip-generate",
+    "migrate:prod": "npx prisma db execute --schema prisma/schema.prisma --file prisma/migrations/20260804_rename-actor-tables-to-explore/migration.sql && npx prisma db push --skip-generate",
     "prisma:studio": "npx prisma studio",
     "prisma:seed": "npx prisma db seed",
     "create-admin": "ts-node ./scripts/create-admin.ts"
