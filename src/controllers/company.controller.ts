@@ -4,7 +4,20 @@ import { prisma } from '../utils/prisma';
 import { uploadToStorage, deleteFromStorage } from '../services/storage.service';
 
 const link = z.string().url().or(z.literal('')).optional();
-export const companySchema = z.object({ name: z.string().trim().min(2).max(100), username: z.string().trim().toLowerCase().regex(/^[a-z0-9_-]{3,30}$/), description: z.string().max(3000).optional(), location: z.string().max(120).optional(), deliveryDetails: z.string().max(1000).optional(), websiteUrl: link, instagramUrl: link, portfolioUrl: link, services: z.array(z.object({ title: z.string().min(2).max(100), price: z.coerce.number().positive(), unit: z.string().max(30), description: z.string().max(500).optional() })).max(30).optional(), projects: z.array(z.object({ title: z.string().min(2).max(150), workUrl: link, description: z.string().max(1000).optional() })).max(50).optional() });
+const companyFields = { name: z.string().trim().min(2).max(100), username: z.string().trim().toLowerCase().regex(/^[a-z0-9_-]{3,30}$/), description: z.string().max(3000).optional(), location: z.string().max(120).optional(), deliveryDetails: z.string().max(1000).optional(), websiteUrl: link, instagramUrl: link, portfolioUrl: link, services: z.array(z.object({ title: z.string().min(2).max(100), price: z.coerce.number().positive(), unit: z.string().max(30), description: z.string().max(500).optional() })).max(30).optional(), projects: z.array(z.object({ title: z.string().min(2).max(150), workUrl: link, description: z.string().max(1000).optional() })).max(50).optional() };
+export const companySchema = z.object(companyFields);
+export const updateCompanySchema = z.object({
+  name: z.string().trim().min(2).max(100).optional(),
+  username: z.string().trim().toLowerCase().regex(/^[a-z0-9_-]{3,30}$/).optional(),
+  description: z.string().max(3000).optional(),
+  location: z.string().max(120).optional(),
+  deliveryDetails: z.string().max(1000).optional(),
+  websiteUrl: link,
+  instagramUrl: link,
+  portfolioUrl: link,
+  services: z.array(z.object({ title: z.string().min(2).max(100), price: z.coerce.number().positive(), unit: z.string().max(30), description: z.string().max(500).optional() })).max(30).optional(),
+  projects: z.array(z.object({ title: z.string().min(2).max(150), workUrl: link, description: z.string().max(1000).optional() })).max(50).optional(),
+}).strict();
 export const openingSchema = z.object({ title: z.string().min(2).max(150), location: z.string().max(120).optional(), schedule: z.string().max(100).optional(), duration: z.string().max(100).optional(), startTime: z.string().datetime().optional(), endTime: z.string().datetime().optional(), workType: z.string().max(100).optional(), salary: z.string().max(120).optional(), description: z.string().min(10).max(5000), responsibilities: z.string().max(3000).optional(), skillsRequired: z.array(z.string().max(80)).max(25).optional(), peopleRequired: z.coerce.number().int().min(1).max(1000).optional(), personalityDetails: z.string().max(2000).optional() });
 export const applicationSchema = z.object({
   applicantName: z.string().trim().min(2, 'Your name is required.').max(100),
@@ -16,6 +29,7 @@ export async function list(req: Request, res: Response, next: NextFunction) { tr
 export async function checkUsername(req: Request, res: Response, next: NextFunction) { try { const username = String(req.query.username || '').trim().toLowerCase(); const valid = /^[a-z0-9_-]{3,30}$/.test(username); if (!valid) { res.json({ data: { username, valid: false, available: false } }); return; } const found = await prisma.companyProfile.findUnique({ where: { username }, select: { id: true } }); res.json({ data: { username, valid: true, available: !found } }); } catch (e) { next(e); } }
 export async function get(req: Request, res: Response, next: NextFunction) { try { const data = await prisma.companyProfile.findUnique({ where: { username: String(req.params.username).toLowerCase() }, include }); if (!data) { res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Company not found' } }); return; } res.json({ data }); } catch (e) { next(e); } }
 export async function create(req: Request, res: Response, next: NextFunction) { try { const data = await prisma.companyProfile.create({ data: { ...req.body, ownerId: req.user!.userId }, include }); res.status(201).json({ data }); } catch (e) { next(e); } }
+export async function update(req: Request, res: Response, next: NextFunction) { try { const company = await prisma.companyProfile.findUnique({ where: { id: String(req.params.id) }, select: { ownerId: true } }); if (!company || company.ownerId !== req.user!.userId) { res.status(403).json({ error: { code: 'FORBIDDEN', message: 'You do not own this company' } }); return; } const data = await prisma.companyProfile.update({ where: { id: String(req.params.id) }, data: { ...req.body, ...(typeof req.body.username === 'string' ? { username: req.body.username.toLowerCase() } : {}) }, include }); res.json({ data }); } catch (e) { next(e); } }
 export async function remove(req: Request, res: Response, next: NextFunction) { try { const company = await prisma.companyProfile.findUnique({ where: { id: String(req.params.id) }, select: { ownerId: true } }); if (!company || company.ownerId !== req.user!.userId) { res.status(403).json({ error: { code: 'FORBIDDEN', message: 'You do not own this company' } }); return; } await prisma.companyProfile.delete({ where: { id: String(req.params.id) } }); res.json({ data: { success: true } }); } catch (e) { next(e); } }
 export async function addOpening(req: Request, res: Response, next: NextFunction) {
   try {
