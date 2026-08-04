@@ -26,6 +26,8 @@ router.use('/conversations', conversationRoutes);
 router.use('/dashboard', dashboardRoutes);
 router.use('/posts', postRoutes);
 router.use('/explore-profiles', exploreRoutes);
+// Temporary compatibility alias for frontend deployments still using the former API path.
+router.use('/actor', exploreRoutes);
 router.use('/payments', paymentRoutes);
 router.use('/movies', moviesRoutes);
 router.use('/share', shareRoutes);
