@@ -60,7 +60,12 @@
     try {
       const response = await fetch('/api/v1/auth/login', { method:'POST', headers:{'Content-Type':'application/json'}, credentials:'same-origin', body:JSON.stringify({email:loginEmail.value,password:loginPassword.value}) });
       const body = await response.json().catch(() => ({}));
-      if (!response.ok || body.data?.user?.role !== 'ADMIN') throw new Error('Administrator access is required.');
+      if (!response.ok) {
+        throw new Error(body.error?.message || 'Request failed');
+      }
+      if (body.data?.user?.role !== 'ADMIN') {
+        throw new Error('Administrator access is required.');
+      }
       token = body.data.accessToken; $('admin-name').textContent = `Signed in as ${body.data.user.username}`; $('login-view').hidden = true; $('dashboard-view').hidden = false; load();
     } catch (error) { $('login-error').textContent = error.message; }
     finally { setLoginLoading(false); }
