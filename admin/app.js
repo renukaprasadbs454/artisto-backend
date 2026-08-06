@@ -8,6 +8,20 @@
     return body.data;
   };
   const showError = (message) => { $('app-error').textContent = message || ''; };
+  let activeTab = 'users';
+  const tabButtons = Array.from(document.querySelectorAll('.tab-button'));
+  const tabPanels = Array.from(document.querySelectorAll('.tab-panel'));
+  const setActiveTab = (tabName) => {
+    activeTab = tabName;
+    tabButtons.forEach((button) => {
+      const isActive = button.dataset.tab === tabName;
+      button.classList.toggle('active', isActive);
+      button.setAttribute('aria-selected', String(isActive));
+    });
+    tabPanels.forEach((panel) => {
+      panel.classList.toggle('active', panel.dataset.tab === tabName);
+    });
+  };
   const applyTheme = (theme) => { document.body.dataset.theme = theme; $('theme-toggle').textContent = theme === 'dark' ? '☀' : '☾'; localStorage.setItem('artisto-admin-theme', theme); };
   const loginButton = $('login-submit');
   const loginForm = $('login-form');
@@ -66,7 +80,7 @@
       // Subscriptions
       $('subscriptions').replaceChildren(...subscriptions.map((s) => {
         const row = document.createElement('tr');
-        row.innerHTML = `<td>${s.username || s.user?.username || s.userId}</td><td>${s.plan || s.tier || '-'}</td><td>${s.status || '-'}</td><td>${s.startedAt ? new Date(s.startedAt).toLocaleDateString() : '-'}</td><td>${s.expiresAt ? new Date(s.expiresAt).toLocaleDateString() : '-'}</td><td class="actions"><button data-sub-id="${s.id}" class="btn btn-secondary">Edit</button></td>`;
+        row.innerHTML = `<td>${s.user?.username || s.username || s.userId}</td><td>${s.plan || s.tier || '-'}</td><td>${s.status || '-'}</td><td>${s.createdAt ? new Date(s.createdAt).toLocaleDateString() : '-'}</td><td>${s.currentPeriodEnd ? new Date(s.currentPeriodEnd).toLocaleDateString() : '-'}</td><td class="actions"><button data-sub-id="${s.id}" class="btn btn-secondary">Edit</button></td>`;
         window.__subsMap[s.id] = s;
         return row;
       }));
@@ -74,7 +88,7 @@
       // Recruitment posts
       $('recruitments').replaceChildren(...recruitments.map((r) => {
         const row = document.createElement('tr');
-        row.innerHTML = `<td>${r.title}</td><td>${r.company || '-'}</td><td>${r.postedBy || r.author || '-'}</td><td>${(r.applicants || []).length || r.applicantCount || 0}</td><td>${r.status || 'Published'}</td><td class="actions"><button data-post-id="${r.id}" class="btn btn-secondary">View</button></td>`;
+        row.innerHTML = `<td>${r.title}</td><td>${r.company?.name || '-'}</td><td>${r.company?.owner?.username || '-'}</td><td>${r._count?.applications || 0}</td><td>${r.isOpen ? 'Open' : 'Closed'}</td><td class="actions"><button data-post-id="${r.id}" class="btn btn-secondary">View</button></td>`;
         window.__recMap[r.id] = r;
         return row;
       }));
@@ -117,6 +131,10 @@
   $('users').addEventListener('change', async (event) => { const id = event.target.dataset.role; if (!id || !confirm('Change this user role?')) return load(); try { await request(`/admin/users/${id}/role`, {method:'PATCH',body:JSON.stringify({role:event.target.value})}); load(); } catch(error) { showError(error.message); load(); } });
   $('users').addEventListener('click', async (event) => { const id = event.target.dataset.suspend; if (!id || !confirm('Change this user suspension status?')) return; const suspended = event.target.textContent === 'Suspend'; try { await request(`/admin/users/${id}/suspend`, {method:'PATCH',body:JSON.stringify({suspended})}); load(); } catch(error) { showError(error.message); } });
   $('refresh').addEventListener('click', () => load(true));
+  tabButtons.forEach((button) => {
+    button.addEventListener('click', () => setActiveTab(button.dataset.tab));
+  });
+  setActiveTab(activeTab);
   // Modal helpers
   const modalOverlay = $('modal-overlay');
   const modalTitle = $('modal-title');
@@ -143,6 +161,7 @@
 
   // Subscription edit
   const subsEl = $('subscriptions');
+  const paysEl = $('payments');
   if (subsEl) {
     subsEl.addEventListener('click', (e) => {
       const id = e.target.dataset.subId;
@@ -150,18 +169,16 @@
       const rec = window.__subsMap && window.__subsMap[id];
       currentModal = 'subscription'; currentRecordId = id;
       const html = `
-        <label>User</label><div>${rec?.user?.username || rec?.username || rec?.userId || ''}</div>
-        <label for="sub-plan">Plan</label><input id="sub-plan" value="${rec?.plan || ''}" />
-        <label for="sub-status">Status</label><select id="sub-status"><option ${rec?.status==='ACTIVE'?'selected':''}>ACTIVE</option><option ${rec?.status==='CANCELLED'?'selected':''}>CANCELLED</option><option ${rec?.status==='PAST_DUE'?'selected':''}>PAST_DUE</option></select>
-        <label for="sub-started">Started at</label><input id="sub-started" type="datetime-local" value="${rec?.startedAt ? new Date(rec.startedAt).toISOString().slice(0,16) : ''}" />
-        <label for="sub-expires">Expires at</label><input id="sub-expires" type="datetime-local" value="${rec?.expiresAt ? new Date(rec.expiresAt).toISOString().slice(0,16) : ''}" />
+        <div class="modal-field"><label>User</label><div>${rec?.user?.username || rec?.username || rec?.userId || ''}</div></div>
+        <div class="modal-field"><label for="sub-plan">Plan</label><input id="sub-plan" value="${rec?.plan || ''}" /></div>
+        <div class="modal-field"><label for="sub-status">Status</label><select id="sub-status"><option ${rec?.status==='ACTIVE'?'selected':''}>ACTIVE</option><option ${rec?.status==='CANCELLED'?'selected':''}>CANCELLED</option><option ${rec?.status==='PAST_DUE'?'selected':''}>PAST_DUE</option></select></div>
+        <div class="modal-field"><label>Started</label><div>${rec?.createdAt ? new Date(rec.createdAt).toLocaleString() : '-'}</div></div>
+        <div class="modal-field"><label for="sub-expires">Expires</label><input id="sub-expires" type="datetime-local" value="${rec?.currentPeriodEnd ? new Date(rec.currentPeriodEnd).toISOString().slice(0,16) : ''}" /></div>
       `;
       openModal('Edit subscription', html);
     });
   }
 
-  // Payments edit
-  const paysEl = $('payments');
   if (paysEl) {
     paysEl.addEventListener('click', (e) => {
       const id = e.target.dataset.payId;
@@ -169,10 +186,10 @@
       const rec = window.__paysMap && window.__paysMap[id];
       currentModal = 'payment'; currentRecordId = id;
       const html = `
-        <label>User</label><div>${rec?.user?.username || rec?.username || rec?.userId || ''}</div>
-        <label for="pay-amount">Amount</label><input id="pay-amount" value="${rec?.amount || ''}" />
-        <label for="pay-utr">UTR / Transaction ref</label><input id="pay-utr" value="${rec?.utr || rec?.transactionRef || ''}" />
-        <label for="pay-status">Status</label><select id="pay-status"><option ${rec?.status==='CAPTURED'?'selected':''}>CAPTURED</option><option ${rec?.status==='PENDING'?'selected':''}>PENDING</option><option ${rec?.status==='FAILED'?'selected':''}>FAILED</option></select>
+        <div class="modal-field"><label>User</label><div>${rec?.user?.username || rec?.username || rec?.userId || ''}</div></div>
+        <div class="modal-field"><label for="pay-amount">Amount</label><input id="pay-amount" value="${rec?.amount || ''}" /></div>
+        <div class="modal-field"><label for="pay-utr">UTR / Transaction ref</label><input id="pay-utr" value="${rec?.utr || rec?.transactionRef || ''}" /></div>
+        <div class="modal-field"><label for="pay-status">Status</label><select id="pay-status"><option ${rec?.status==='CAPTURED'?'selected':''}>CAPTURED</option><option ${rec?.status==='PENDING'?'selected':''}>PENDING</option><option ${rec?.status==='FAILED'?'selected':''}>FAILED</option></select></div>
       `;
       openModal('Edit payment', html);
     });
@@ -202,7 +219,7 @@
     if (!currentModal || !currentRecordId) return;
     try {
       if (currentModal === 'subscription') {
-        const body = { plan: $('sub-plan').value, status: $('sub-status').value, startedAt: $('sub-started').value || null, expiresAt: $('sub-expires').value || null };
+        const body = { plan: $('sub-plan').value, status: $('sub-status').value, expiresAt: $('sub-expires').value || null };
         await request(`/admin/subscriptions/${currentRecordId}`, { method: 'PATCH', body: JSON.stringify(body) });
       } else if (currentModal === 'payment') {
         const body = { amount: $('pay-amount').value, utr: $('pay-utr').value, status: $('pay-status').value };
