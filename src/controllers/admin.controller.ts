@@ -328,6 +328,26 @@ export async function getTableRecords(req: Request, res: Response, next: NextFun
           },
         });
         break;
+      case 'subscriptions':
+        data = await prisma.subscription.findMany({
+          take: 100,
+          orderBy: { createdAt: 'desc' },
+          include: {
+            user: { select: { username: true, email: true } },
+            _count: { select: { payments: true } },
+          } as any,
+        });
+        break;
+      case 'recruitments':
+        data = await prisma.companyOpening.findMany({
+          take: 100,
+          orderBy: { createdAt: 'desc' },
+          include: {
+            company: { select: { name: true, id: true } },
+            _count: { select: { applications: true } },
+          } as any,
+        });
+        break;
       case 'posts':
         data = await prisma.post.findMany({
           take: 100,
@@ -404,6 +424,9 @@ export async function deleteTableRecord(req: Request, res: Response, next: NextF
       case 'payments':
         await prisma.payment.delete({ where: { id } });
         break;
+      case 'subscriptions':
+        await prisma.subscription.delete({ where: { id } });
+        break;
       default:
         res.status(400).json({ error: { code: 'INVALID_TABLE', message: `Cannot delete record from table '${tableName}'` } });
         return;
@@ -413,4 +436,84 @@ export async function deleteTableRecord(req: Request, res: Response, next: NextF
   } catch (err) {
     next(err);
   }
+}
+
+/**
+ * PATCH /admin/subscriptions/:id/toggle
+ * Toggle subscription status between ACTIVE and CANCELLED (admin action)
+ */
+export async function toggleSubscription(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const id = req.params.id as string;
+    const sub = await prisma.subscription.findUnique({ where: { id } });
+    if (!sub) { res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Subscription not found' } }); return; }
+    const newStatus = sub.status === 'ACTIVE' ? 'CANCELLED' : 'ACTIVE';
+    const updated = await prisma.subscription.update({ where: { id }, data: { status: newStatus } });
+    res.status(200).json({ data: updated });
+  } catch (err) { next(err); }
+}
+
+/**
+ * POST /admin/payments/:id/reconcile
+ * Mark a payment as CAPTURED (reconciled) if possible.
+ */
+export async function reconcilePayment(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const id = req.params.id as string;
+    const payment = await prisma.payment.findUnique({ where: { id } });
+    if (!payment) { res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Payment not found' } }); return; }
+    if (payment.status === 'CAPTURED') { res.status(200).json({ data: payment }); return; }
+    const updated = await prisma.payment.update({ where: { id }, data: { status: 'CAPTURED' } });
+    res.status(200).json({ data: updated });
+  } catch (err) { next(err); }
+}
+
+/**
+ * PATCH /admin/subscriptions/:id
+ * Update subscription fields (plan, status, startedAt, expiresAt)
+ */
+export async function updateSubscription(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const id = req.params.id as string;
+    const payload: any = {};
+    if (typeof req.body.plan === 'string') payload.plan = req.body.plan;
+    if (typeof req.body.status === 'string') payload.status = req.body.status;
+    if (req.body.startedAt) payload.startedAt = new Date(String(req.body.startedAt));
+    if (req.body.expiresAt) payload.expiresAt = new Date(String(req.body.expiresAt));
+    const updated = await prisma.subscription.update({ where: { id }, data: payload });
+    res.status(200).json({ data: updated });
+  } catch (err) { next(err); }
+}
+
+/**
+ * PATCH /admin/payments/:id
+ * Update payment fields (utr, status, amount)
+ */
+export async function updatePayment(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const id = req.params.id as string;
+    const payload: any = {};
+    if (typeof req.body.utr === 'string') payload.utr = req.body.utr;
+    if (typeof req.body.status === 'string') payload.status = req.body.status;
+    if (typeof req.body.amount !== 'undefined') payload.amount = Number(req.body.amount);
+    const updated = await prisma.payment.update({ where: { id }, data: payload });
+    res.status(200).json({ data: updated });
+  } catch (err) { next(err); }
+}
+
+/**
+ * PATCH /admin/recruitments/:id
+ * Update a company opening (title, description, isOpen, salary)
+ */
+export async function updateRecruitment(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const id = req.params.id as string;
+    const payload: any = {};
+    if (typeof req.body.title === 'string') payload.title = req.body.title;
+    if (typeof req.body.description === 'string') payload.description = req.body.description;
+    if (typeof req.body.isOpen === 'boolean') payload.isOpen = req.body.isOpen;
+    if (typeof req.body.salary === 'string') payload.salary = req.body.salary;
+    const updated = await prisma.companyOpening.update({ where: { id }, data: payload });
+    res.status(200).json({ data: updated });
+  } catch (err) { next(err); }
 }

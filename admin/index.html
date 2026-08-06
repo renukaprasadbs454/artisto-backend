@@ -22,16 +22,30 @@
           <button id="password-toggle" class="password-toggle" type="button" aria-label="Show password" aria-pressed="false" title="Show password">👁</button>
         </div>
         <p id="login-error" class="error" role="alert"></p>
-        <button id="login-submit" type="submit">Sign in securely</button>
+        <button id="login-submit" type="submit" class="btn btn-primary">Sign in securely</button>
       </form>
     </section>
     <section id="dashboard-view" hidden>
-      <header><div class="header-title"><div class="brand-mark">A</div><div><p class="eyebrow">Restricted area</p><h1>Admin Command Center</h1><p id="admin-name" class="muted"></p></div></div><div class="header-actions"><button id="theme-toggle" class="icon-button" aria-label="Switch theme" title="Switch theme">☾</button><button id="logout" class="secondary">Sign out</button></div></header>
+      <header><div class="header-title"><div class="brand-mark">A</div><div><p class="eyebrow">Restricted area</p><h1>Admin Command Center</h1><p id="admin-name" class="muted"></p></div></div><div class="header-actions"><button id="theme-toggle" class="icon-button" aria-label="Switch theme" title="Switch theme">☾</button><button id="logout" class="btn btn-secondary">Sign out</button></div></header>
       <p id="app-error" class="error" role="alert"></p>
       <div id="stats" class="stats"></div>
-      <section class="card"><div class="section-heading"><div><h2>Users</h2><p class="muted">Suspension and role changes are enforced by the backend.</p></div><button id="refresh" class="secondary">Refresh</button></div><div class="table-wrap"><table><thead><tr><th>Username</th><th>Email</th><th>Role</th><th>Status</th><th>Actions</th></tr></thead><tbody id="users"></tbody></table></div></section>
+      <section class="card"><div class="section-heading"><div><div><h2>Users</h2><p class="muted">Suspension and role changes are enforced by the backend.</p></div></div><button id="refresh" class="btn btn-secondary">Refresh</button></div><div class="table-wrap"><table><thead><tr><th>Username</th><th>Email</th><th>Role</th><th>Status</th><th>Actions</th></tr></thead><tbody id="users"></tbody></table></div></section>
+
+      <section class="card" id="subscriptions-section"><div class="section-heading"><div><div><h2>Subscriptions</h2><p class="muted">View and manage user subscriptions.</p></div></div></div><div class="table-wrap"><table><thead><tr><th>User</th><th>Plan</th><th>Status</th><th>Started</th><th>Expires</th><th>Actions</th></tr></thead><tbody id="subscriptions"></tbody></table></div></section>
+
+      <section class="card" id="recruitments-section"><div class="section-heading"><div><div><h2>Recruitment Posts</h2><p class="muted">Review recruitment listings and applicants.</p></div></div></div><div class="table-wrap"><table><thead><tr><th>Title</th><th>Company</th><th>Posted by</th><th>Applicants</th><th>Status</th><th>Actions</th></tr></thead><tbody id="recruitments"></tbody></table></div></section>
+
+      <section class="card" id="payments-section"><div class="section-heading"><div><div><h2>Payments</h2><p class="muted">Payments and UTRs. Use actions to reconcile.</p></div></div></div><div class="table-wrap"><table><thead><tr><th>User</th><th>Amount</th><th>UTR</th><th>Status</th><th>Date</th><th>Actions</th></tr></thead><tbody id="payments"></tbody></table></div></section>
     </section>
   </main>
+  <!-- Modals -->
+  <div id="modal-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);backdrop-filter:blur(2px);z-index:60;align-items:center;justify-content:center;">
+    <div id="modal" class="card" style="max-width:800px;width:calc(100% - 32px);">
+      <header style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;"><h3 id="modal-title">Edit</h3><button id="modal-close" class="icon-button" title="Close">✕</button></header>
+      <div id="modal-body"></div>
+      <footer style="display:flex;gap:12px;justify-content:flex-end;margin-top:18px;"><button id="modal-cancel" class="btn btn-secondary">Cancel</button><button id="modal-save" class="btn btn-primary">Save changes</button></footer>
+    </div>
+  </div>
   <script src="/admin-panel/app.js" defer></script>
 </body>
 </html>
