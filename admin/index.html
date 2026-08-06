@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="referrer" content="same-origin" />
   <title>Artisto Administration</title>
+  <link rel="icon" type="image/webp" href="/admin-panel/artisto-logo.webp" />
   <link rel="stylesheet" href="/admin-panel/styles.css" />
 </head>
 <body data-theme="light">
@@ -26,16 +27,37 @@
       </form>
     </section>
     <section id="dashboard-view" hidden>
-      <header><div class="header-title"><div class="brand-mark">A</div><div><p class="eyebrow">Restricted area</p><h1>Admin Command Center</h1><p id="admin-name" class="muted"></p></div></div><div class="header-actions"><button id="theme-toggle" class="icon-button" aria-label="Switch theme" title="Switch theme">☾</button><button id="logout" class="btn btn-secondary">Sign out</button></div></header>
+      <header><div class="header-title"><div class="brand-mark"><img src="artisto-logo.webp" alt="Artisto" class="brand-logo" /></div><div><p class="eyebrow">Restricted area</p><h1>Admin Command Center</h1><p id="admin-name" class="muted"></p></div></div><div class="header-actions"><button id="theme-toggle" class="icon-button" aria-label="Switch theme" title="Switch theme">☾</button><button id="logout" class="btn btn-secondary">Sign out</button></div></header>
       <p id="app-error" class="error" role="alert"></p>
       <div id="stats" class="stats"></div>
-      <section class="card"><div class="section-heading"><div><div><h2>Users</h2><p class="muted">Suspension and role changes are enforced by the backend.</p></div></div><button id="refresh" class="btn btn-secondary">Refresh</button></div><div class="table-wrap"><table><thead><tr><th>Username</th><th>Email</th><th>Role</th><th>Status</th><th>Actions</th></tr></thead><tbody id="users"></tbody></table></div></section>
+      <div class="dashboard-controls">
+        <button id="refresh" class="btn btn-secondary">Refresh</button>
+      </div>
+      <div class="tabs" role="tablist" aria-label="Admin sections">
+        <button type="button" class="tab-button active" data-tab="users" aria-selected="true">Users</button>
+        <button type="button" class="tab-button" data-tab="subscriptions" aria-selected="false">Subscriptions</button>
+        <button type="button" class="tab-button" data-tab="recruitments" aria-selected="false">Recruitment Posts</button>
+        <button type="button" class="tab-button" data-tab="payments" aria-selected="false">Payments</button>
+      </div>
+      <section class="card tab-panel active" data-tab="users">
+        <div class="section-heading"><div><div><h2>Users</h2><p class="muted">Suspension and role changes are enforced by the backend.</p></div></div></div>
+        <div class="table-wrap"><table><thead><tr><th>Username</th><th>Email</th><th>Role</th><th>Status</th><th>Actions</th></tr></thead><tbody id="users"></tbody></table></div>
+      </section>
 
-      <section class="card" id="subscriptions-section"><div class="section-heading"><div><div><h2>Subscriptions</h2><p class="muted">View and manage user subscriptions.</p></div></div></div><div class="table-wrap"><table><thead><tr><th>User</th><th>Plan</th><th>Status</th><th>Started</th><th>Expires</th><th>Actions</th></tr></thead><tbody id="subscriptions"></tbody></table></div></section>
+      <section class="card tab-panel" data-tab="subscriptions" id="subscriptions-section">
+        <div class="section-heading"><div><div><h2>Subscriptions</h2><p class="muted">View and manage user subscriptions.</p></div></div></div>
+        <div class="table-wrap"><table><thead><tr><th>User</th><th>Plan</th><th>Status</th><th>Started</th><th>Expires</th><th>Actions</th></tr></thead><tbody id="subscriptions"></tbody></table></div>
+      </section>
 
-      <section class="card" id="recruitments-section"><div class="section-heading"><div><div><h2>Recruitment Posts</h2><p class="muted">Review recruitment listings and applicants.</p></div></div></div><div class="table-wrap"><table><thead><tr><th>Title</th><th>Company</th><th>Posted by</th><th>Applicants</th><th>Status</th><th>Actions</th></tr></thead><tbody id="recruitments"></tbody></table></div></section>
+      <section class="card tab-panel" data-tab="recruitments" id="recruitments-section">
+        <div class="section-heading"><div><div><h2>Recruitment Posts</h2><p class="muted">Review recruitment listings and applicants.</p></div></div></div>
+        <div class="table-wrap"><table><thead><tr><th>Title</th><th>Company</th><th>Posted by</th><th>Applicants</th><th>Status</th><th>Actions</th></tr></thead><tbody id="recruitments"></tbody></table></div>
+      </section>
 
-      <section class="card" id="payments-section"><div class="section-heading"><div><div><h2>Payments</h2><p class="muted">Payments and UTRs. Use actions to reconcile.</p></div></div></div><div class="table-wrap"><table><thead><tr><th>User</th><th>Amount</th><th>UTR</th><th>Status</th><th>Date</th><th>Actions</th></tr></thead><tbody id="payments"></tbody></table></div></section>
+      <section class="card tab-panel" data-tab="payments" id="payments-section">
+        <div class="section-heading"><div><div><h2>Payments</h2><p class="muted">Payments and UTRs. Use actions to reconcile.</p></div></div></div>
+        <div class="table-wrap"><table><thead><tr><th>User</th><th>Amount</th><th>UTR</th><th>Status</th><th>Date</th><th>Actions</th></tr></thead><tbody id="payments"></tbody></table></div>
+      </section>
     </section>
   </main>
   <!-- Modals -->

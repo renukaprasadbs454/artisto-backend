@@ -343,7 +343,12 @@ export async function getTableRecords(req: Request, res: Response, next: NextFun
           take: 100,
           orderBy: { createdAt: 'desc' },
           include: {
-            company: { select: { name: true, id: true } },
+            company: {
+              select: {
+                name: true,
+                owner: { select: { username: true } },
+              },
+            },
             _count: { select: { applications: true } },
           } as any,
         });
@@ -470,18 +475,17 @@ export async function reconcilePayment(req: Request, res: Response, next: NextFu
 
 /**
  * PATCH /admin/subscriptions/:id
- * Update subscription fields (plan, status, startedAt, expiresAt)
+ * Update subscription fields (plan, status, expiresAt)
  */
-export async function updateSubscription(req: Request, res: Response, next: NextFunction): Promise<void> {
-  try {
-    const id = req.params.id as string;
-    const payload: any = {};
-    if (typeof req.body.plan === 'string') payload.plan = req.body.plan;
-    if (typeof req.body.status === 'string') payload.status = req.body.status;
-    if (req.body.startedAt) payload.startedAt = new Date(String(req.body.startedAt));
-    if (req.body.expiresAt) payload.expiresAt = new Date(String(req.body.expiresAt));
-    const updated = await prisma.subscription.update({ where: { id }, data: payload });
-    res.status(200).json({ data: updated });
+ export async function updateSubscription(req: Request, res: Response, next: NextFunction): Promise<void> {
+   try {
+     const id = req.params.id as string;
+     const payload: any = {};
+     if (typeof req.body.plan === 'string') payload.plan = req.body.plan;
+     if (typeof req.body.status === 'string') payload.status = req.body.status;
+     if (req.body.expiresAt) payload.currentPeriodEnd = new Date(String(req.body.expiresAt));
+     const updated = await prisma.subscription.update({ where: { id }, data: payload });
+     res.status(200).json({ data: updated });
   } catch (err) { next(err); }
 }
 

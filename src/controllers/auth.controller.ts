@@ -119,10 +119,11 @@ export async function register(req: Request, res: Response, next: NextFunction):
 
     // Never return passwordHash
     const { passwordHash: _, refreshTokenHash: __, ...safeUser } = user;
+    const profileComplete = isProfileComplete(user.profile);
 
     res.status(201).json({
       data: {
-        user: safeUser,
+        user: { ...safeUser, profileComplete },
         accessToken,
       },
     });
@@ -166,8 +167,9 @@ export async function resetPassword(req: Request, res: Response, next: NextFunct
     setRefreshCookie(res, cookieValue);
 
     const { passwordHash: _, refreshTokenHash: __, ...safeUser } = user as any;
+    const profileComplete = isProfileComplete(user.profile);
 
-    res.status(200).json({ data: { user: safeUser, accessToken } });
+    res.status(200).json({ data: { user: { ...safeUser, profileComplete }, accessToken } });
   } catch (err) {
     next(err);
   }
@@ -302,9 +304,10 @@ export async function login(req: Request, res: Response, next: NextFunction): Pr
     setRefreshCookie(res, cookieValue);
 
     const { passwordHash: _, refreshTokenHash: __, ...safeUser } = user;
+    const profileComplete = isProfileComplete(user.profile);
 
     const mustReset = Boolean((user as any).mustResetPassword);
-    const responseData: any = { user: safeUser, accessToken };
+    const responseData: any = { user: { ...safeUser, profileComplete }, accessToken };
     if (mustReset) {
       responseData.mustResetPassword = true;
       responseData.message = 'Password reset required. Please update your password.';
