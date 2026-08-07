@@ -400,13 +400,14 @@ model CompanyOpening {
 }
 
 model CompanyApplication {
-  id        String         @id @default(uuid())
-  openingId String
-  opening   CompanyOpening @relation(fields: [openingId], references: [id], onDelete: Cascade)
+  id          String         @id @default(uuid())
+  openingId   String
+  opening     CompanyOpening @relation(fields: [openingId], references: [id], onDelete: Cascade)
   applicantId String
-  applicant User           @relation(fields: [applicantId], references: [id], onDelete: Cascade)
-  note      String?
-  createdAt DateTime       @default(now())
+  applicant   User           @relation(fields: [applicantId], references: [id], onDelete: Cascade)
+  status      OrderStatus    @default(PENDING)
+  note        String?
+  createdAt   DateTime       @default(now())
 
   @@unique([openingId, applicantId])
   @@index([applicantId])
