@@ -26,8 +26,16 @@ const frontendUrl = process.env.FRONTEND_URL;
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin) return callback(null, true); // allow non-browser requests like curl/postman
+          if (!origin) return callback(null, true); // allow non-browser requests like curl/postman
       if (!isDev) {
+        try {
+          const url = new URL(origin);
+          if (url.hostname === 'localhost' || url.hostname === '127.0.0.1') {
+            return callback(null, true);
+          }
+        } catch (e) {
+          // fall through
+        }
         return callback(null, origin === frontendUrl);
       }
       // In development allow any localhost with any port (e.g., vite may use 5173,5174...)

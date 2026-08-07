@@ -32,6 +32,14 @@ const io = new Server(httpServer, {
     origin: (origin, callback) => {
       if (!origin) return callback(null, true);
       if (!isDev) {
+        try {
+          const url = new URL(origin);
+          if (url.hostname === 'localhost' || url.hostname === '127.0.0.1') {
+            return callback(null, true);
+          }
+        } catch (e) {
+          // fall through
+        }
         return callback(null, origin === frontendUrl);
       }
 
