@@ -8,6 +8,15 @@
     return body.data;
   };
   const showError = (message) => { $('app-error').textContent = message || ''; };
+  const showToast = (message, type = 'success') => {
+    const toast = $('app-feedback');
+    if (!toast) return;
+    toast.textContent = message;
+    toast.className = `toast ${type}`;
+    toast.style.display = 'block';
+    clearTimeout(window.__toastTimer);
+    window.__toastTimer = window.setTimeout(() => { toast.style.display = 'none'; }, 7000);
+  };
   let activeTab = 'users';
   const tabButtons = Array.from(document.querySelectorAll('.tab-button'));
   const tabPanels = Array.from(document.querySelectorAll('.tab-panel'));
@@ -68,7 +77,7 @@
       // Users
       $('users').replaceChildren(...users.map((user) => {
         const row = document.createElement('tr');
-        row.innerHTML = `<td>${user.username}</td><td>${user.email}</td><td><select data-role="${user.id}"><option ${user.role==='BUYER'?'selected':''}>BUYER</option><option ${user.role==='SELLER'?'selected':''}>SELLER</option><option ${user.role==='ADMIN'?'selected':''}>ADMIN</option></select></td><td>${user.suspended ? 'Suspended' : 'Active'}</td><td class="actions"><button data-suspend="${user.id}" class="${user.suspended ? 'secondary' : 'danger'}">${user.suspended ? 'Restore' : 'Suspend'}</button></td>`;
+        row.innerHTML = `<td>${user.username}</td><td>${user.email}</td><td><select data-role="${user.id}"><option ${user.role==='BUYER'?'selected':''}>BUYER</option><option ${user.role==='SELLER'?'selected':''}>SELLER</option><option ${user.role==='ADMIN'?'selected':''}>ADMIN</option></select></td><td>${user.suspended ? 'Suspended' : 'Active'}</td><td class="actions"><button data-suspend="${user.id}" class="${user.suspended ? 'secondary' : 'danger'}">${user.suspended ? 'Restore' : 'Suspend'}</button><button data-delete-user="${user.id}" class="btn btn-secondary">Delete</button></td>`;
         return row;
       }));
 
@@ -101,7 +110,7 @@
         return row;
       }));
 
-      if (showFeedback) showError('Refreshed successfully.');
+      if (showFeedback) showToast('Refreshed successfully.');
     } catch (error) { showError(error.message); }
     finally {
       refreshButton.disabled = false;
@@ -129,7 +138,32 @@
     finally { setLoginLoading(false); }
   });
   $('users').addEventListener('change', async (event) => { const id = event.target.dataset.role; if (!id || !confirm('Change this user role?')) return load(); try { await request(`/admin/users/${id}/role`, {method:'PATCH',body:JSON.stringify({role:event.target.value})}); load(); } catch(error) { showError(error.message); load(); } });
-  $('users').addEventListener('click', async (event) => { const id = event.target.dataset.suspend; if (!id || !confirm('Change this user suspension status?')) return; const suspended = event.target.textContent === 'Suspend'; try { await request(`/admin/users/${id}/suspend`, {method:'PATCH',body:JSON.stringify({suspended})}); load(); } catch(error) { showError(error.message); } });
+  $('users').addEventListener('click', async (event) => {
+    const suspendId = event.target.dataset.suspend;
+    const deleteId = event.target.dataset.deleteUser;
+    if (suspendId) {
+      if (!confirm('Change this user suspension status?')) return;
+      const suspended = event.target.textContent === 'Suspend';
+      try {
+        await request(`/admin/users/${suspendId}/suspend`, { method: 'PATCH', body: JSON.stringify({ suspended }) });
+        load();
+      } catch (error) {
+        showError(error.message);
+      }
+      return;
+    }
+    if (deleteId) {
+      if (!confirm('Delete this user and all related data? This cannot be undone.')) return;
+      try {
+        await request(`/admin/tables/users/${deleteId}`, { method: 'DELETE' });
+        showToast('User deleted successfully.');
+        load();
+      } catch (error) {
+        showError(error.message);
+      }
+      return;
+    }
+  });
   $('refresh').addEventListener('click', () => load(true));
   tabButtons.forEach((button) => {
     button.addEventListener('click', () => setActiveTab(button.dataset.tab));
