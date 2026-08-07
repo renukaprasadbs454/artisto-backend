@@ -39,18 +39,21 @@ body[data-theme="dark"] {
 
 html {
   font-size: 16px;
+  overflow-x: hidden;
 }
 
 body {
   margin: 0;
   min-height: 100vh;
   background: radial-gradient(circle at 80% -10%, rgba(249, 115, 22, 0.12) 0, transparent 30%), var(--page);
+  overflow-x: hidden;
   color: var(--text);
   transition: background 0.3s ease, color 0.3s ease;
   font-family: inherit;
 }
 
 .shell {
+  width: min(100%, 1140px);
   max-width: 1140px;
   margin: 0 auto;
   padding: 48px 24px;
@@ -60,7 +63,7 @@ body {
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: 28px;
-  padding: 32px;
+  padding: clamp(24px, 2.5vw, 32px);
   box-shadow: var(--shadow);
 }
 
@@ -137,9 +140,18 @@ body {
   color: var(--text);
 }
 
+.table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
 .table-wrap table {
+  min-width: 100%;
   width: 100%;
   border-collapse: collapse;
+  table-layout: auto;
 }
 
 .table-wrap th,
@@ -147,6 +159,8 @@ body {
   text-align: left;
   padding: 14px 16px;
   border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  white-space: normal;
+  word-break: break-word;
 }
 
 .table-wrap tbody tr:hover {
@@ -157,8 +171,38 @@ body {
   margin-top: 24px;
 }
 
+.admin-modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(4px);
+  z-index: 60;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.admin-modal {
+  width: min(100%, 720px);
+  max-width: 100%;
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  border-radius: 24px;
+}
+
+.icon-button {
+  min-width: 44px;
+  min-height: 44px;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+}
+
 .login-card {
-  max-width: 500px;
+  max-width: min(100%, 500px);
+  width: 100%;
   margin: 10vh auto;
 }
 
@@ -285,6 +329,7 @@ button {
   font-weight: 800;
   cursor: pointer;
   transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+  min-height: 44px;
 }
 
 button:hover {
@@ -298,6 +343,8 @@ button:hover {
   gap: 10px;
   border-radius: 16px;
   text-decoration: none;
+  width: auto;
+  min-width: 0;
 }
 
 .btn-primary {
@@ -306,6 +353,7 @@ button:hover {
   color: #ffffff;
   border: 1px solid transparent;
   box-shadow: 0 18px 40px rgba(249, 115, 22, 0.25);
+  white-space: normal;
 }
 
 .btn-secondary,
@@ -413,29 +461,18 @@ header,
 }
 
 .table-wrap {
-  overflow: auto;
-  border-radius: 22px;
-  background: var(--card);
-  border: 1px solid var(--border);
-}
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    width: 100%;
+  }
 
-.table-wrap table {
-  width: 100%;
-  border-collapse: collapse;
-  min-width: 720px;
-}
-
-.table-wrap thead th {
-  position: sticky;
-  top: 0;
-  background: var(--surface);
-  color: var(--muted);
-  font-size: 0.75rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  line-height: 1.4;
-}
+  .table-wrap table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 100%;
+    table-layout: auto;
+  }
 
 body[data-theme="dark"] .table-wrap tr:hover {
   background: rgba(255, 255, 255, 0.08);
@@ -501,15 +538,198 @@ button.is-loading::before {
 }
 
 @media (max-width: 680px) {
+  .shell {
+    padding: 20px 14px;
+  }
+  .admin-modal {
+    width: min(100%, calc(100vw - 32px));
+    max-height: calc(100vh - 32px);
+  }
+  .login-card {
+    width: 100%;
+    margin: 5vh auto;
+  }
+  .login-brand {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+    text-align: center;
+  }
+  .brand-mark,
+  .brand-divider,
+  .brand-admin {
+    display: inline-flex;
+  }
+  .brand-divider {
+    display: none;
+  }
   .stats {
     grid-template-columns: 1fr;
   }
   header,
   .section-heading {
     flex-direction: column;
-    align-items: flex-start;
+    align-items: stretch;
+    gap: 12px;
+  }
+  .header-actions {
+    width: 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .dashboard-controls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    margin-bottom: 0;
+  }
+  .tabs {
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .tab-button {
+    flex: 1 1 100%;
+    min-width: 0;
+    text-align: center;
+    padding: 10px 14px;
+    font-size: 0.95rem;
+  }
+  .table-wrap {
+    padding: 0;
   }
   .table-wrap table {
-    min-width: 600px;
+    min-width: 100%;
+    font-size: 0.95rem;
+  }
+  .table-wrap th,
+  .table-wrap td {
+    padding: 12px 14px;
+  }
+  .btn,
+  .icon-button {
+    min-width: 0;
+  }
+  .btn {
+    width: auto;
+  }
+  .password-field {
+    position: relative;
+  }
+  .password-toggle {
+    right: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .shell {
+    padding: 16px 12px;
+  }
+  .admin-modal {
+    width: min(100%, calc(100vw - 24px));
+    max-height: calc(100vh - 24px);
+  }
+  .card {
+    padding: 18px;
+  }
+  .login-card {
+    padding: 18px;
+  }
+  .stats {
+    gap: 12px;
+  }
+  .stat {
+    padding: 16px;
+  }
+  header,
+  .section-heading {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .dashboard-controls {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    margin-bottom: 0;
+  }
+  .header-actions {
+    width: 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .tabs {
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .tab-button {
+    flex: 1 1 100%;
+    min-width: 0;
+    text-align: center;
+    padding: 10px 12px;
+    font-size: 0.92rem;
+  }
+  .header-actions button,
+  .tab-button {
+    width: 100%;
+  }
+  .table-wrap {
+    padding: 0;
+  }
+  .table-wrap table {
+    min-width: 100%;
+    font-size: 0.92rem;
+  }
+  .table-wrap th,
+  .table-wrap td {
+    padding: 10px 10px;
+  }
+  .table-wrap tr:hover {
+    background: rgba(249, 115, 22, 0.04);
+  }
+  td.actions {
+    justify-content: flex-start;
+  }
+  .btn,
+  .icon-button {
+    min-width: 0;
+    width: 100%;
+  }
+  .btn-secondary,
+  .btn-primary,
+  .danger {
+    padding: 12px 16px;
+  }
+  #modal {
+    max-width: calc(100vw - 24px);
+    width: calc(100vw - 24px);
+    max-height: calc(100vh - 24px);
+  }
+  #modal .modal-field {
+    gap: 12px;
+  }
+  #modal .modal-field label {
+    font-size: 0.95rem;
+  }
+  #modal .modal-field input,
+  #modal .modal-field textarea,
+  #modal .modal-field select {
+    width: 100%;
+  }
+  .toast {
+    top: 12px;
+    left: 12px;
+    right: 12px;
+    max-width: calc(100vw - 24px);
+  }
+  .icon-button {
+    width: 44px;
+    height: 44px;
+  }
+  .password-toggle {
+    right: 8px;
   }
 }
