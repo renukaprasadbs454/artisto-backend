@@ -14,7 +14,6 @@ import {
   deleteCompany,
   addOpening,
   updateOpening,
-  deleteOpening,
   createPageSchema,
   updatePageSchema,
   createCompanySchema,
@@ -44,6 +43,5 @@ router.delete('/companies/:companyId', requireAuth, requireRole('SELLER'), delet
 // Role Opening management under Companies
 router.post('/companies/:companyId/openings', requireAuth, requireRole('SELLER'), validate(createOpeningSchema), addOpening);
 router.patch('/openings/:openingId', requireAuth, requireRole('SELLER'), validate(updateOpeningSchema), updateOpening);
-router.delete('/openings/:openingId', requireAuth, requireRole('SELLER'), deleteOpening);
 
 export default router;
