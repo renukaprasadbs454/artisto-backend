@@ -219,3 +219,30 @@ export async function uploadAvatar(req: Request, res: Response, next: NextFuncti
     next(e);
   }
 }
+export async function deleteOpening(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const ownerId = req.user!.userId;
+    const openingId = req.params.openingId as string;
+
+    const opening = await prisma.recruiterOpening.findUnique({
+      where: { id: openingId },
+      include: { company: { include: { page: true } } },
+    });
+
+    if (!opening) {
+      res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Opening not found' } });
+      return;
+    }
+
+    if (opening.company.page.ownerId !== ownerId) {
+      res.status(403).json({ error: { code: 'FORBIDDEN', message: 'You do not own this page' } });
+      return;
+    }
+
+    await prisma.recruiterOpening.delete({ where: { id: openingId } });
+
+    res.status(200).json({ data: { message: 'Opening deleted successfully' } });
+  } catch (err) {
+    next(err);
+  }
+}
